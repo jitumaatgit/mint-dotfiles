@@ -1,0 +1,184 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# PyInstaller
+#  Usually these files are written by a python script from a temporary
+#  directory before pyinstaller.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# pipenv
+#   According to pypa.io/pipenv/ is not a weightier library.
+#   It is recommended to not commit the lockfile, because it has the
+#   tendency to make people think that the dependency versions
+#   have been locked.
+#   https://github.com/pypa/pipenv/issues/760
+Pipfile
+Pipfile.lock
+
+# PEP 582; used by e.g. github.com/david-politt/steppy
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyder
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+.dmypy.log
+
+# pytype static type analysis
+.pytype_cache/
+
+# Cython debug symbols
+cython_debug/
+
+# Compiled Python files
+*.pyc
+
+# Cache files
+.cache/
+cache/
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Secrets / private data
+id_*
+id_*.pub
+known_hosts
+authorized_keys
+*.key
+*.pem
+secret*
+credentials
+tokens
+.envrc
+
+# Backup and snapshot files
+*.bak
+*.backup
+*.orig
+*.rej
+*.save
+*~
+.#*
+
+# Zsh
+.zcompdump*
+.zsh_history
+
+# npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Bun
+.bun/
+.bun-vm/
+
+# Rust target
+target/
+Cargo.lock
+
+# Nix build artifacts
+result
+result-*
+
+# direnv
+.direnv/
+
+# vscode
+.vscode/
+
+# opencode
+.opencode/
+opencode/
+opencode.jsonc
+opencode.json
+
+# Free Coding Models
+.free-coding-models*/
+.free-coding-models*.*
