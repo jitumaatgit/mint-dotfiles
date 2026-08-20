@@ -1,0 +1,3 @@
+# workmux project config for ~/mint-dotfiles
+# Inherits global config (~/.config/workmux/config.yaml): window mode, omp agent, 3-pane layout.
+base_branch: main
