@@ -1,26 +1,19 @@
--- bootstrap lazy.nvim
-local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
-  vim.fn.system({
-    "git",
-    "clone",
-    "--filter=blob:none",
-    "https://github.com/folke/lazy.nvim.git",
-    "--branch=stable", -- latest stable release
-    lazypath,
-  })
-end
-vim.opt.rtp:prepend(lazypath)
--- make sure our lua files are discoverable
-vim.opt.rtp:append(vim.fn.stdpath("config") .. "/lua")
+-- bootstrap lazy.nvim, LazyVim and your plugins
+require("config.lazy")
+require("config.markdown-folding")
+require("snippets")
 
--- load plugins
-local plugins = require("custom.plugins")
-require("lazy").setup(plugins)
+-- Auto-move completed tasks to Completed section
+require("custom.task-auto-complete").setup()
 
--- load custom settings
+-- Filter tasks by file-level tags (requires obsidian.nvim)
+require("custom.obsidian-task-filter").setup({
+  picker = "telescope",
+  show_completed = false,
+  preview_context = 3,
+})
+
+require("custom.trouble-fetch-fix").setup()
+
+-- Spawn omp terminal on first save of prompt notes
 require("custom.omp-prompt").setup()
--- lint configuration is now handled within the plugin specs
--- Apply colorscheme after plugins load
-vim.o.termguicolors = true
-vim.cmd('colorscheme catppuccin')
