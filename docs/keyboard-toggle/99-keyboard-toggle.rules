@@ -1,0 +1,18 @@
+# 99-keyboard-toggle.rules
+#
+# Disable internal laptop keyboard when external USB keyboard is plugged in.
+# Uses serio unbind/bind on the AT keyboard (serio0) to avoid needing a daemon.
+#
+# Matches the Telink IQUNIX 2.4GHz USB dongle (vendor 320f, product 5088).
+#
+# Place this file in /etc/udev/rules.d/ and run:
+#   sudo udevadm control --reload
+#   sudo udevadm trigger --subsystem-match=usb --attr-match=idVendor=320f --attr-match=idProduct=5088
+#
+# Test with:
+#   udevadm test /sys/devices/pci0000:00/0000:00:14.0/usb3/3-4
+#
+# See apply.sh for automated installation.
+
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/usr/local/sbin/keyboard-toggle disable"
+ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/usr/local/sbin/keyboard-toggle enable"
