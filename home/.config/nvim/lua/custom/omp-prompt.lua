@@ -1,5 +1,8 @@
 local M = {}
 
+-- Track omp terminal buffers for cleanup on exit
+local omp_terminals = {}
+
 local function extract_prompt_from_buffer(bufnr)
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local in_frontmatter = false
@@ -36,16 +39,31 @@ local function spawn_omp_terminal(prompt)
   -- Pass prompt as argv to omp (not stdin)
   local term = snacks.terminal.open({ "omp", prompt }, {
     win = { position = "bottom", height = 15 },
+    auto_close = true,
   })
   local term_buf = term.buf
+
+  -- Track for cleanup on neovim exit
+  omp_terminals[term_buf] = true
 
   -- Terminal persists; no stdin sending needed
   return term_buf
 end
 
 function M.setup(opts)
-  opts = opts or {}
-
+  -- Cleanup omp terminals on neovim exit
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    callback = function()
+      for term_buf in pairs(omp_terminals) do
+        if vim.api.nvim_buf_is_valid(term_buf) then
+          local job_id = vim.b[term_buf].terminal_job_id
+          if job_id then
+            pcall(vim.fn.jobstop, job_id)
+          end
+        end
+      end
+    end,
+  })
   vim.api.nvim_create_autocmd("BufWritePost", {
     pattern = "*/notes/90-archive/prompts/*.md",
     callback = function(args)
