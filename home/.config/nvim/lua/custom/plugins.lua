@@ -1,5 +1,12 @@
 return {
   {
+    "LazyVim/LazyVim",
+    import = "lazyvim.plugins",
+    opts = {
+      colorscheme = "catppuccin",
+    },
+  },
+  {
     "neovim/nvim-lspconfig",
     dependencies = { "nvim-lua/plenary.nvim" },
     config = function()
@@ -8,7 +15,7 @@ return {
         settings = {
           Lua = {
             diagnostics = {
-              globals = { 'vim' },
+              globals = { "vim" },
             },
           },
         },

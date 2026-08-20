@@ -19,5 +19,8 @@ local plugins = require("custom.plugins")
 require("lazy").setup(plugins)
 
 -- load custom settings
-require("custom.omp-prompt")
+require("custom.omp-prompt").setup()
 -- lint configuration is now handled within the plugin specs
+-- Apply colorscheme after plugins load
+vim.o.termguicolors = true
+vim.cmd('colorscheme catppuccin')
