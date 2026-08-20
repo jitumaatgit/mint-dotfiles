@@ -1,5 +1,19 @@
 return {
   "nvim-mini/mini.files",
+  build = function(plugin)
+    local f = plugin.dir .. "/lua/mini/files.lua"
+    local content = vim.fn.readfile(f)
+    local s = table.concat(content, "\n")
+    if s:find("Guard against invalid glob patterns") then return end
+    local old = "    local glob_lpeg = vim.glob.to_lpeg(adjust_case(glob) or '**')"
+    local new = [[    -- Guard against invalid glob patterns (e.g., **/*.{} from misbehaving LSP servers)
+    local ok, glob_lpeg = pcall(vim.glob.to_lpeg, adjust_case(glob) or '**')
+    if not ok then
+      return function() return false end
+    end]]
+    s = s:gsub(old, new)
+    vim.fn.writefile(vim.split(s, "\n"), f)
+  end,
   keys = {
     {
       "<leader>e",
@@ -331,6 +345,9 @@ return {
     end
 
     local set_git_extmarks = function(buf_id)
+      if not vim.api.nvim_buf_is_valid(buf_id) then
+        return
+      end
       vim.api.nvim_buf_clear_namespace(buf_id, git_ns, 0, -1)
       local dir = vim.fs.dirname(tostring(vim.api.nvim_buf_get_name(buf_id):gsub("minifiles://", "")))
       local status, root = git_status(dir)

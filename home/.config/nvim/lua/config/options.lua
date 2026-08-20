@@ -1,6 +1,13 @@
 -- Options are automatically loaded before lazy.nvim startup
 -- Default options that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/options.lua
 -- Add any additional options here
+
+-- We deliberately import the octo extra at the end of lua/plugins/cmp.lua,
+-- AFTER our nvim-cmp spec, so extras.lang.git's cmp hook finds a populated
+-- opts.sources (enabling octo via lazyvim.json instead crashes startup at
+-- extras/lang/git.lua). LazyVim's import-order check warns about that
+-- deliberate ordering, so disable it here.
+vim.g.lazyvim_check_order = false
 vim.opt.scrolloff = 0 -- line buffer above and below
 vim.opt.swapfile = false
 
