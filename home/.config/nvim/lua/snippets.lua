@@ -30,52 +30,6 @@ ls.add_snippets("all", {
   }),
 })
 
--- Markdown exponent superscript snippets: ^<num> → Unicode superscript
-local superscripts = {
-  ["0"] = "⁰", ["1"] = "¹", ["2"] = "²", ["3"] = "³", ["4"] = "⁴",
-  ["5"] = "⁵", ["6"] = "⁶", ["7"] = "⁷", ["8"] = "⁸", ["9"] = "⁹",
-  ["+"] = "⁺", ["-"] = "⁻", ["="] = "⁼", ["("] = "⁽", [")"] = "⁾",
-  ["a"] = "ᵃ", ["b"] = "ᵇ", ["c"] = "ᶜ", ["d"] = "ᵈ", ["e"] = "ᵉ",
-  ["f"] = "ᶠ", ["g"] = "ᵍ", ["h"] = "ʰ", ["i"] = "ⁱ", ["j"] = "ʲ",
-  ["k"] = "ᵏ", ["l"] = "ˡ", ["m"] = "ᵐ", ["n"] = "ⁿ", ["o"] = "ᵒ",
-  ["p"] = "ᵖ", ["r"] = "ʳ", ["s"] = "ˢ", ["t"] = "ᵗ", ["u"] = "ᵘ",
-  ["v"] = "ᵛ", ["w"] = "ʷ", ["x"] = "ˣ", ["y"] = "ʸ", ["z"] = "ᶻ",
-  ["A"] = "ᴬ", ["B"] = "ᴮ", ["D"] = "ᴰ", ["E"] = "ᴱ", ["G"] = "ᴳ",
-  ["H"] = "ᴴ", ["I"] = "ᴵ", ["J"] = "ᴶ", ["K"] = "ᴷ", ["L"] = "ᴸ",
-  ["M"] = "ᴹ", ["N"] = "ᴺ", ["O"] = "ᴼ", ["P"] = "ᴾ", ["R"] = "ᴿ",
-  ["T"] = "ᵀ", ["U"] = "ᵁ", ["V"] = "ⱽ", ["W"] = "ᵂ",
-}
-local exp_snippets = {}
-for char, sup in pairs(superscripts) do
-  exp_snippets[#exp_snippets + 1] = s("^" .. char, {
-    t({ sup }),
-    i(0),
-  })
-end
-
--- Markdown table snippets
-local md_snippets = vim.list_extend({
-  s("t2", {
-    t({ "| ${1:Header} | ${2:Header} |" }),
-    t({ "", "|--------|--------|" }),
-    t({ "", "| ${3:cell} | ${4:cell} |" }),
-    i(0),
-  }),
-  s("t3", {
-    t({ "| ${1:Header} | ${2:Header} | ${3:Header} |" }),
-    t({ "", "|--------|--------|--------|" }),
-    t({ "", "| ${4:cell} | ${5:cell} | ${6:cell} |" }),
-    i(0),
-  }),
-  s("t4", {
-    t({ "| ${1:Header} | ${2:Header} | ${3:Header} | ${4:Header} |" }),
-    t({ "", "|--------|--------|--------|--------|" }),
-    t({ "", "| ${5:cell} | ${6:cell} | ${7:cell} | ${8:cell} |" }),
-    i(0),
-  }),
-}, exp_snippets)
-ls.add_snippets("markdown", md_snippets)
-
 -- Cloze snippets: only active in anki filetype (.anki files)
 ls.add_snippets("anki", {
   s("CT", {

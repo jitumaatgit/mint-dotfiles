@@ -17,7 +17,13 @@ return {
         -- provider is termporarily disabled and maintainer is working on fix. will have to use wezterm window split for
         -- now
         -- provider = {
+        --   cmd = vim.fn.expand("$LOCALAPPDATA/scoop/shims/opencode.exe"),
         --   enabled = "snacks",
+        --   -- wezterm = {
+        --   --   direction = "bottom",
+        --   --   top_level = false,
+        --   --   percent = 40,
+        --   -- },
         --   snacks = {
         --     auto_close = true,
         --     win = {

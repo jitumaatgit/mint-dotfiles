@@ -4,8 +4,7 @@
 vim.opt.scrolloff = 0 -- line buffer above and below
 vim.opt.swapfile = false
 
--- SQLite DLL path for yanky.nvim (sqlite.lua)
-vim.g.sqlite_clib_path = "/usr/lib/aarch64-linux-gnu/libsqlite3.so.0"
+-- sqlite_clib_path is resolved at startup by lua/_sqlite_path.lua (see init.lua).
 
 -- set textwidth (default 80)
 vim.opt.textwidth = 120

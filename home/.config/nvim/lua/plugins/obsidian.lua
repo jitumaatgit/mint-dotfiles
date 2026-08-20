@@ -64,7 +64,7 @@ return {
       substitutions = {},
     },
     follow_url_func = function(url)
-      vim.fn.jobstart({ "xdg-open", url }, { detach = true })
+      vim.fn.jobstart({ "xdg-open", url })
     end,
     picker = {
       name = "telescope.nvim",
@@ -94,7 +94,7 @@ return {
     ui = { enable = false },
     -- Disable frontmatter for files in the tasks folder or kanban files to avoid conflicts with kanban.nvim
     disable_frontmatter = function(filename)
-      return filename:match("[\\/]tasks[\\/]") or filename:match("^tasks[\\/]") or filename:match("kanban%.md$") or filename:match("[\\/]prompts[\\/]") or filename:match("^prompts[\\/]")
+      return filename:match("[\\/]tasks[\\/]") or filename:match("^tasks[\\/]") or filename:match("kanban%.md$")
     end,
   },
   keys = {

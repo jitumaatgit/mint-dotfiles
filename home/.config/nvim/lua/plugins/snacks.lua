@@ -1,13 +1,8 @@
 return {
   {
     "folke/snacks.nvim",
-    opts = {
-      -- Configure snacks.terminal to use login bash shell
-      -- This ensures .bashrc is sourced when spawned on Windows (Git Bash)
-      terminal = {
-        shell = "/usr/bin/bash.exe",
-      },
-    },
+    -- snacks.terminal defaults to $SHELL (zsh on this machine); no override needed.
+    -- (Windows version set opts.terminal.shell = "/usr/bin/bash.exe" for Git Bash — dropped on Linux.)
     keys = {
       -- I use this keymap with mini.files, but snacks explorer was taking over
       -- https://github.com/folke/snacks.nvim/discussions/949

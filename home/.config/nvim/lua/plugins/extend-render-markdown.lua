@@ -139,14 +139,6 @@ return {
         },
       },
     },
-    code = {
-      -- Show the ``` fences instead of hiding them
-      conceal_delimiters = false,
-      -- Do not blank out the fence line (was 'hide' from LazyVim extra)
-      border = "none",
-      -- Do not overlay a language header on top of the fence
-      language = false,
-    },
     html = {
       -- Turn on / off all HTML rendering
       enabled = true,

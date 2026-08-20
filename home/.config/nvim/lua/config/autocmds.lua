@@ -41,6 +41,52 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   end,
 })
 
--- (PowerShell autocmds removed — not applicable on Linux)
+-- Set PowerShell execution policy to Unrestricted for LSP
+-- Note: Scope CurrentUser does NOT require admin privileges
+vim.api.nvim_create_autocmd("VimEnter", {
+  pattern = "*",
+  callback = function()
+    if vim.fn.has("win32") == 1 then
+      vim.fn.jobstart(
+        {
+          "powershell.exe",
+          "-NoProfile",
+          "-Command",
+          "Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted -Force",
+        },
+        { on_exit = function() end, detach = true }
+      )
+    end
+  end,
+  once = true,
+})
+
+-- Ensure PowerShell files are detected with correct filetype
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = { "*.ps1", "*.psm1", "*.psd1", "*.ps1xml" },
+  callback = function()
+    vim.bo.filetype = "ps1"
+  end,
+})
+
+-- Enable nvim-navic breadcrumbs in winbar for PowerShell files
+vim.api.nvim_create_autocmd("LspAttach", {
+  callback = function(args)
+    if vim.bo.filetype == "ps1" and args.data and args.data.client_id then
+      local client = vim.lsp.get_client_by_id(args.data.client_id)
+      if client and client.name == "powershell_es" then
+        vim.api.nvim_create_autocmd("CursorHold", {
+          buffer = 0,
+          callback = function()
+            local navic = require("nvim-navic")
+            if navic.is_available() then
+              vim.wo.winbar = navic.get_location()
+            end
+          end,
+        })
+      end
+    end
+  end,
+})
 
 return M
