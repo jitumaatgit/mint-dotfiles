@@ -1,68 +1,74 @@
 #!/usr/bin/env bash
 # keyboard-toggle.sh
 #
-# Disables/re-enables the internal AT keyboard via serio unbind/bind.
-# This script is intended to be called from a udev rule on external keyboard connect/disconnect.
-# It is idempotent and logs actions to /var/log/keyboard-toggle.log.
+# Disables/re-enables the internal AT keyboard by managing the udev flag file.
+# This script works with the udev rules in 99-keyboard-toggle.rules.
+#
+# The udev rules use /run/keyboard-toggle-external-present as a flag to
+# indicate when the external keyboard is present. When the flag exists,
+# the internal keyboard is ignored by libinput.
+#
+# Usage:
+#   keyboard-toggle disable  - Disable internal keyboard (set flag)
+#   keyboard-toggle enable   - Enable internal keyboard (clear flag)
+#   keyboard-toggle status   - Show current state
+#   keyboard-toggle test     - Test if external keyboard is present
 
 set -euo pipefail
 
 SCRIPT_NAME=$(basename "$0")
-LOGFILE="/var/log/keyboard-toggle.log"
-SERIO_ID="serio0"   # the serio device for the internal AT keyboard
-AT_DRIVER="atkbd"
+FLAG_FILE="/run/keyboard-toggle-external-present"
+INTERNAL_KBD="AT Translated Set 2 keyboard"
 
-# Limit to 'disable', 'enable', or 'status'.  The script is tiny; 0/1/2 arguents.
+usage() {
+    echo "Usage: $SCRIPT_NAME {disable|enable|status|test}" >&2
+    echo "" >&2
+    echo "Commands:" >&2
+    echo "  disable  - Disable internal keyboard (set flag file)" >&2
+    echo "  enable   - Enable internal keyboard (clear flag file)" >&2
+    echo "  status   - Show current state" >&2
+    echo "  test     - Test if external keyboard is present" >&2
+    exit 1
+}
+
 case "$1" in
     disable)
-        ACTION="unbind"
+        touch "$FLAG_FILE"
+        echo "$SCRIPT_NAME: internal keyboard disabled (flag set)"
         ;;
     enable)
-        ACTION="bind"
+        rm -f "$FLAG_FILE"
+        echo "$SCRIPT_NAME: internal keyboard enabled (flag cleared)"
         ;;
-        status)
-            if [[ -f /sys/bus/serio/drivers/${AT_DRIVER}/$SERIO_ID ]]; then
-                STATE="bound"
-            else
-                STATE="unbound"
-            fi
-            echo "Keyboard is currently $STATE" >&2
+    status)
+        if [[ -f "$FLAG_FILE" ]]; then
+            echo "Internal keyboard is DISABLED (external keyboard present)"
+        else
+            echo "Internal keyboard is ENABLED (no external keyboard)"
+        fi
+        exit 0
+        ;;
+    test)
+        # Check if any USB device matches the external keyboard
+        if udevadm info --query=all --name=/dev/input/event* 2>/dev/null | grep -q "ID_VENDOR_ID=320f.*ID_MODEL_ID=5088"; then
+            echo "External keyboard (Telink IQUNIX 2.4GHz) is PRESENT"
             exit 0
-            ;;
+        else
+            echo "External keyboard (Telink IQUNIX 2.4GHz) is NOT present"
+            exit 1
+        fi
+        ;;
     "")
-        >&2 echo "Usage: $SCRIPT_NAME {disable|enable|status}"
-        exit 1
+        usage
         ;;
     *)
-        >&2 echo "Unknown argument: $1"
-        exit 1
+        echo "Unknown argument: $1" >&2
+        usage
         ;;
 esac
 
-# Helper: check if already in target state.
-has_state() {
-    local action=$1
-    if [[ "$action" == "unbind" ]]; then
-        # If the driver has bindings then it's bound. Unbinding removes them.
-        [[ -f /sys/bus/serio/drivers/${AT_DRIVER}/$SERIO_ID ]] && return 0
-    else
-        [[ ! -f /sys/bus/serio/drivers/${AT_DRIVER}/$SERIO_ID ]] && return 0
-    fi
-    return 1
-}
-
-if has_state "$ACTION"; then
-    echo "$SCRIPT_NAME: already $ACTIONd" | tee -a "$LOGFILE"
-    exit 0
-fi
-
-# Perform the action using sysfs.
-        if [[ "$ACTION" == "unbind" ]]; then
-            echo "$SCRIPT_NAME: unbound internal keyboard ($SERIO_ID)" | tee -a "$LOGFILE"
-            echo "$SERIO_ID" > /sys/bus/serio/drivers/${AT_DRIVER}/unbind
-        elif [[ "$ACTION" == "bind" ]]; then
-            echo "$SCRIPT_NAME: bound internal keyboard ($SERIO_ID)" | tee -a "$LOGFILE"
-            echo "$SERIO_ID" > /sys/bus/serio/drivers/${AT_DRIVER}/bind
-        fi
+# Trigger udev to re-evaluate the internal keyboard
+# This applies the LIBINPUT_IGNORE_DEVICE property based on flag state
+udevadm trigger --subsystem-match=input --attr-match=name="$INTERNAL_KBD" 2>/dev/null || true
 
 exit 0

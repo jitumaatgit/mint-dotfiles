@@ -1,18 +1,34 @@
 # 99-keyboard-toggle.rules
 #
 # Disable internal laptop keyboard when external USB keyboard is plugged in.
-# Uses serio unbind/bind on the AT keyboard (serio0) to avoid needing a daemon.
+# Uses libinput device ignoring via udev rules to make the disable persistent.
 #
 # Matches the Telink IQUNIX 2.4GHz USB dongle (vendor 320f, product 5088).
 #
+# Mechanism:
+# 1. Flag file /run/keyboard-toggle-external-present tracks external keyboard state
+# 2. When external is added: set flag + trigger re-evaluation of internal keyboard
+# 3. When external is removed: clear flag + trigger re-evaluation of internal keyboard
+# 4. When internal keyboard is evaluated: if flag exists, set LIBINPUT_IGNORE_DEVICE
+#
 # Place this file in /etc/udev/rules.d/ and run:
 #   sudo udevadm control --reload
-#   sudo udevadm trigger --subsystem-match=usb --attr-match=idVendor=320f --attr-match=idProduct=5088
-#
-# Test with:
-#   udevadm test /sys/devices/pci0000:00/0000:00:14.0/usb3/3-4
-#
-# See apply.sh for automated installation.
+#   sudo udevadm trigger
 
-ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/usr/local/sbin/keyboard-toggle disable"
-ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/usr/local/sbin/keyboard-toggle enable"
+# ============================================================================
+# External keyboard rules - manage flag and trigger internal keyboard re-eval
+# ============================================================================
+
+# When external keyboard is added, create flag file and trigger internal keyboard re-evaluation
+ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/bin/sh -c 'touch /run/keyboard-toggle-external-present && udevadm trigger --subsystem-match=input --attr-match=name=\"AT Translated Set 2 keyboard\"'"
+
+# When external keyboard is removed, clear flag file and trigger internal keyboard re-evaluation
+ACTION=="remove", SUBSYSTEM=="usb", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", RUN+="/bin/sh -c 'rm -f /run/keyboard-toggle-external-present && udevadm trigger --subsystem-match=input --attr-match=name=\"AT Translated Set 2 keyboard\"'"
+
+# ============================================================================
+# Internal keyboard rules - apply LIBINPUT_IGNORE_DEVICE if flag exists
+# ============================================================================
+
+# When internal AT keyboard is added (or re-evaluated via trigger), check flag
+# If flag file exists, tell libinput to ignore this device
+ACTION=="add", SUBSYSTEM=="input", ATTRS{name}=="AT Translated Set 2 keyboard", TEST=="/run/keyboard-toggle-external-present", ENV{LIBINPUT_IGNORE_DEVICE}="1"
