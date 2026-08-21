@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# apply.sh - Install keyboard-toggle udev rules and helper script
+# apply.sh - Install keyboard-toggle helper script and udev rule
 #
-# This script installs the udev rules and helper script to:
+# This script installs the helper script and udev rule to:
 #   • /usr/local/sbin/keyboard-toggle (helper script)
 #   • /etc/udev/rules.d/99-keyboard-toggle.rules
 #
@@ -13,11 +13,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="$(dirname "$SCRIPT_DIR")"
 
 BIN_DIR="/usr/local/sbin"
 RULES_DIR="/etc/udev/rules.d"
-FLAG_FILE="/run/keyboard-toggle-external-present"
 VENDOR_ID="320f"
 PRODUCT_ID="5088"
 
@@ -26,9 +24,6 @@ install -m 0755 -o root -g root "${SCRIPT_DIR}/keyboard-toggle.sh" "${BIN_DIR}/k
 
 # Install udev rule
 install -m 0644 -o root -g root "${SCRIPT_DIR}/99-keyboard-toggle.rules" "${RULES_DIR}/99-keyboard-toggle.rules"
-
-# Clean up any existing flag file to ensure fresh state
-rm -f "$FLAG_FILE"
 
 # Reload udev
 udevadm control --reload
@@ -53,15 +48,10 @@ done
 
 if [[ $found -eq 1 ]]; then
     echo "🔌 External USB keyboard detected – disabling internal keyboard."
-    touch "$FLAG_FILE"
     "${BIN_DIR}/keyboard-toggle" disable
 else
     echo "⌨️  No external keyboard detected – internal keyboard remains enabled."
-    rm -f "$FLAG_FILE"
 fi
-
-# Trigger udev to apply rules to all existing devices
-udevadm trigger --subsystem-match=input --attr-match=name="AT Translated Set 2 keyboard"
 
 # Success message
 cat <<'EOF'
@@ -76,6 +66,6 @@ To test:
   • Manually disable: sudo keyboard-toggle disable
   • Manually enable: sudo keyboard-toggle enable
 
-Note: The internal keyboard is disabled via libinput ignore, which is
-persistent across events and works with Cinnamon Wayland.
+Note: This uses xinput to disable the internal keyboard at the X11 level,
+which works with Cinnamon on X11.
 EOF
