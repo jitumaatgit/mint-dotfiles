@@ -1,0 +1,24 @@
+# workmux global config — applies to all projects
+# Reference: `workmux config reference` | https://workmux.raine.dev/guide/configuration/
+
+nerdfont: false
+
+# Multiplexer mode: worktrees open as windows in the current tmux session,
+# placed beside the calling window.
+mode: window
+window_placement: after_current
+
+# Default agent: omp (Oh My Pi). Prompt injection via <agent> placeholder.
+agent: omp
+
+# Default pane layout per worktree window:
+#   1. omp agent (focused, receives -p prompt injection)
+#   2. nvim editor (right column, top)
+#   3. plain shell (right column, bottom)
+panes:
+  - command: <agent>
+    focus: true
+  - command: nvim .
+    split: horizontal
+    percentage: 35
+  - split: vertical

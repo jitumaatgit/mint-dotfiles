@@ -1,0 +1,36 @@
+[user]
+	name = Jitu
+	email = jitumaat@protonmail.com
+	signingkey = /home/mint/.ssh/id_ed25519
+[credential]
+	helper =
+[credential "https://github.com"]
+	helper = !gh auth git-credential
+[gpg]
+	format = ssh
+[init]
+	defaultBranch = main
+[pull]
+	rebase = true
+[core]
+	autocrlf = false
+	editor = nvim
+[diff]
+	tool = nvim
+[difftool]
+	prompt = false
+[difftool "nvim"]
+	cmd = nvim -d $LOCAL $REMOTE
+[merge]
+	tool = diffview
+	conflictstyle = zdiff3
+[mergetool]
+	prompt = false
+[mergetool "diffview"]
+	cmd = nvim -c "DiffviewOpen"
+[mergetool "nvim"]
+	cmd = nvim -d $LOCAL $REMOTE $MERGED -c "wincmd J"
+[commit]
+	gpgsign = false
+[push]
+	autoSetupRemote = true

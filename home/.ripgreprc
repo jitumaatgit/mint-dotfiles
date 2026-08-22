@@ -1,0 +1,4 @@
+--smart-case
+# Suggestions (uncomment to enable):
+# --hidden
+# --glob=!.git/*
