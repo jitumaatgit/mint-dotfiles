@@ -108,7 +108,6 @@ return {
     { "<leader>nb", "<cmd>ObsidianBacklinks<cr>", desc = "Show backlinks" },
     { "<leader>nl", "<cmd>ObsidianLinks<cr>", desc = "Show outgoing links" },
     { "<leader>ni", "<cmd>ObsidianPasteImg<cr>", desc = "Paste image" },
-    { "<leader>nc", "<cmd>ObsidianToggleCheckbox<cr>", desc = "Toggle checkbox" },
     { "<leader>ne", "<cmd>ObsidianExtractNote<cr>", desc = "Extract note from selection", mode = "v" },
   },
   config = function(_, opts)

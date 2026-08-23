@@ -105,7 +105,7 @@ return {
     },
     checkbox = {
       -- Turn on / off checkbox state rendering
-      enabled = true,
+      enabled = false,
       -- Determines how icons fill the available space:
       --  inline:  underlying text is concealed resulting in a left aligned icon
       --  overlay: result is left padded with spaces to hide any additional text

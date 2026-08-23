@@ -37,7 +37,7 @@ return {
       {
         -- -- You can confirm in your teminal lamw26wmal with:
         -- -- rg "^\s*-\s\[ \]" test-markdown.md
-        "<leader>tt",
+        "<leader>tT",
         function()
           Snacks.picker.grep({
             prompt = " ",
@@ -66,13 +66,13 @@ return {
             show_empty = true,
             supports_live = false,
             layout = "ivy",
-          })
-        end,
-        desc = "[P]Search for incomplete tasks",
+          },
+        },
+        desc = "[P]Search for incomplete tasks (tT)",
       },
       -- -- Iterate throuth completed tasks in Snacks_picker lamw26wmal
       {
-        "<leader>tc",
+        "<leader>tC",
         function()
           Snacks.picker.grep({
             prompt = " ",
@@ -95,9 +95,8 @@ return {
             show_empty = true,
             supports_live = false,
             layout = "ivy",
-          })
-        end,
-        desc = "[P]Search for complete tasks",
+        },
+        desc = "[P]Search for complete tasks (tC)",
       },
       -- -- List git branches with Snacks_picker to quickly switch to a new branch
       {

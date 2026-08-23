@@ -20,5 +20,6 @@ vim.opt.textwidth = 120
 vim.o.foldcolumn = "1" -- Show fold column
 vim.o.foldlevel = 99 -- Large value required by ufo
 vim.o.foldlevelstart = 99 -- Large value required by ufo
-vim.o.foldenable = true -- Enable folding
+vim.opt.showcmd = true
+vim.opt.showcmdloc = "statusline"
 
