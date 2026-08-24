@@ -66,10 +66,9 @@ return {
             show_empty = true,
             supports_live = false,
             layout = "ivy",
-          },
-        },
+          })
+        end,
         desc = "[P]Search for incomplete tasks (tT)",
-      },
       -- -- Iterate throuth completed tasks in Snacks_picker lamw26wmal
       {
         "<leader>tC",
@@ -95,7 +94,8 @@ return {
             show_empty = true,
             supports_live = false,
             layout = "ivy",
-        },
+          })
+        end,
         desc = "[P]Search for complete tasks (tC)",
       },
       -- -- List git branches with Snacks_picker to quickly switch to a new branch
