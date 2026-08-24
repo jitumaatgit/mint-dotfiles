@@ -6,7 +6,7 @@ return {
     files = { "*.md" },
 
     -- Checkmate owns styling (Unicode markers: ☐, ✔, ⊝, etc.)
-    style = true,
+    style = {},
 
     -- Custom todo states - keeping defaults but can extend later
     todo_states = {
