@@ -145,6 +145,7 @@ return {
     -- Custom keymaps with <leader>t prefix
     local map = vim.keymap.set
     local api = require("checkmate.api")
+    local checkmate = require("checkmate")
 
     -- Core todo operations
     map("n", "<leader>tn", api.create_todo_normal, { desc = "Create todo" })
@@ -178,11 +179,11 @@ return {
     map("x", "<leader>tD", function() api.add_metadata("done") end, { desc = "Add done to selection" })
 
     -- Metadata navigation
-    map("n", "<leader>tj", api.jump_next_metadata, { desc = "Jump to next metadata" })
-    map("n", "<leader>tk", api.jump_prev_metadata, { desc = "Jump to previous metadata" })
+    map("n", "<leader>tj", checkmate.jump_next_metadata, { desc = "Jump to next metadata" })
+    map("n", "<leader>tk", checkmate.jump_previous_metadata, { desc = "Jump to previous metadata" })
 
     -- Lint current buffer
-    map("n", "<leader>tl", api.lint, { desc = "Lint checkmate buffer" })
+    map("n", "<leader>tl", checkmate.lint, { desc = "Lint checkmate buffer" })
 
     -- Select/search todos (using snacks picker backend)
     map("n", "<leader>tf", function()
