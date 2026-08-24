@@ -52,41 +52,32 @@ return {
         style = { fg = "#f9e2af" },
         key = "<leader>tp",
         jump_to_on_insert = "value",
-        select_on_insert = true,
       },
 
-      -- Area tag (PARA method: projects, areas, resources, archives)
+      -- Area tag
       area = {
-        style = { fg = "#cba6f7" },
-        choices = function()
-          return { "projects", "areas", "resources", "archives" }
-        end,
+        style = { fg = "#89b4fa" },
         key = "<leader>ta",
         jump_to_on_insert = "value",
-        select_on_insert = true,
       },
 
-      -- Time estimate tag
+      -- Time estimate
       time_estimate = {
         style = { fg = "#fab387" },
-        choices = function()
-          return { "5m", "15m", "30m", "1h", "2h", "4h", "8h+" }
-        end,
         key = "<leader>tm",
         jump_to_on_insert = "value",
-        select_on_insert = true,
       },
 
-      -- Built-in priority with choices
+      -- Priority
       priority = {
         style = function(context)
           local value = context.value:lower()
           if value == "high" then
-            return { fg = "#f38ba8", bold = true }
+            return { fg = "#ff5555", bold = true }
           elseif value == "medium" then
-            return { fg = "#f9e2af" }
+            return { fg = "#ffb86c" }
           elseif value == "low" then
-            return { fg = "#a6e3a1" }
+            return { fg = "#8be9fd" }
           end
         end,
         choices = function()
@@ -97,25 +88,29 @@ return {
         select_on_insert = true,
       },
 
-      -- Built-in due date
+      -- Due date
       due = {
-        style = { fg = "#f38ba8" },
+        style = { fg = "#ff79c6" },
         key = "<leader>td",
         jump_to_on_insert = "value",
       },
 
-      -- Built-in started timestamp
+      -- Started timestamp
       started = {
-        style = { fg = "#89b4fa" },
+        style = { fg = "#8be9fd" },
         key = "<leader>ts",
-        jump_to_on_insert = "value",
+        get_value = function()
+          return os.date("%Y-%m-%d %H:%M")
+        end,
       },
 
-      -- Built-in done timestamp
+      -- Done timestamp
       done = {
-        style = { fg = "#a6e3a1" },
+        style = { fg = "#50fa7b" },
         key = "<leader>tD",
-        jump_to_on_insert = "value",
+        get_value = function()
+          return os.date("%Y-%m-%d %H:%M")
+        end,
       },
     },
 
@@ -136,7 +131,7 @@ return {
     -- Archive completed todos
     archive = {
       enabled = true,
-      heading = "## Archived",
+      heading = { text = "## Archived" },
     },
 
     -- Linting
@@ -152,19 +147,17 @@ return {
     local api = require("checkmate.api")
 
     -- Core todo operations
-    map("n", "<leader>tn", api.create, { desc = "Create todo" })
-    map("x", "<leader>tn", api.create, { desc = "Create todos from selection" })
-    map("n", "<leader>tt", api.toggle, { desc = "Toggle todo" })
-    map("x", "<leader>tt", api.toggle, { desc = "Toggle selected todos" })
-    map("n", "<leader>tc", api.check, { desc = "Check todo" })
-    map("x", "<leader>tc", api.check, { desc = "Check selected todos" })
-    map("n", "<leader>tu", api.uncheck, { desc = "Uncheck todo" })
-    map("x", "<leader>tu", api.uncheck, { desc = "Uncheck selected todos" })
-    map("n", "<leader>t=", api.cycle_next, { desc = "Cycle todo state forward" })
-    map("n", "<leader>t-", api.cycle_prev, { desc = "Cycle todo state backward" })
-    map("n", "<leader>tg", api.archive, { desc = "Archive completed todos" })
+    map("n", "<leader>tn", api.create_todo_normal, { desc = "Create todo" })
+    map("x", "<leader>tn", api.create_todos_visual, { desc = "Create todos from selection" })
+    map("n", "<leader>tt", api.toggle_state, { desc = "Toggle todo" })
+    map("x", "<leader>tt", api.toggle_state, { desc = "Toggle selected todos" })
+    map("n", "<leader>tc", function() api.toggle_state(true) end, { desc = "Check todo" })
+    map("x", "<leader>tc", function() api.toggle_state(true) end, { desc = "Check selected todos" })
+    map("n", "<leader>tu", function() api.toggle_state(false) end, { desc = "Uncheck todo" })
+    map("x", "<leader>tu", function() api.toggle_state(false) end, { desc = "Uncheck selected todos" })
+    map("n", "<leader>tg", api.archive_todos, { desc = "Archive completed todos" })
 
-    -- Metadata keymaps (defined in metadata config above, but also accessible via commands)
+    -- Metadata keymaps
     map("n", "<leader>te", function() api.add_metadata("energy") end, { desc = "Add energy metadata" })
     map("x", "<leader>te", function() api.add_metadata("energy") end, { desc = "Add energy metadata to selection" })
     map("n", "<leader>tx", function() api.add_metadata("context") end, { desc = "Add context metadata" })
