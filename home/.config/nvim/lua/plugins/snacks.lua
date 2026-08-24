@@ -69,6 +69,7 @@ return {
           })
         end,
         desc = "[P]Search for incomplete tasks (tT)",
+      },
       -- -- Iterate throuth completed tasks in Snacks_picker lamw26wmal
       {
         "<leader>tC",
