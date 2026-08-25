@@ -11,7 +11,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(dirname "$SCRIPT_DIR")"
+REPO_ROOT="$SCRIPT_DIR"
 REPO_HOME="$REPO_ROOT/home"
 
 echo "🔄 Syncing tracked files from $HOME to $REPO_HOME"
