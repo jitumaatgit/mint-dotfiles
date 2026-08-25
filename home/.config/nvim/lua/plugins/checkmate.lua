@@ -13,7 +13,7 @@ return {
       unchecked = { marker = "☐", hl = "CheckmateUnchecked" },
       checked = { marker = "✔", hl = "CheckmateChecked" },
       cancelled = {
-        marker = "✗",
+        marker = "❌",
         markdown = "-",
         type = "complete",
         order = 2,
@@ -137,7 +137,7 @@ return {
     -- Archive completed todos
     archive = {
       enabled = true,
-      heading = { text = "## Archived" },
+      heading = { title = "Archived", level = 2 },
     },
 
     -- Linting
@@ -161,7 +161,8 @@ return {
     map("x", "<leader>tc", checkmate.check, { desc = "Check selected todos" })
     map("n", "<leader>tu", checkmate.uncheck, { desc = "Uncheck todo" })
     map("x", "<leader>tu", checkmate.uncheck, { desc = "Uncheck selected todos" })
-    map("n", "<leader>tg", api.archive_todos, { desc = "Archive completed todos" })
+    map("n", "<leader>tg", checkmate.archive, { desc = "Archive completed todos" })
+    map({ "n", "x" }, "<leader>tx", checkmate.cancel, { desc = "Cancel todo" })
 
     -- Metadata keymaps (use main module's add_metadata which handles context)
     map("n", "<leader>te", function()
@@ -170,10 +171,10 @@ return {
     map("x", "<leader>te", function()
       checkmate.add_metadata("energy")
     end, { desc = "Add energy metadata to selection" })
-    map("n", "<leader>tx", function()
+    map("n", "<leader>ty", function()
       checkmate.add_metadata("context")
     end, { desc = "Add context metadata" })
-    map("x", "<leader>tx", function()
+    map("x", "<leader>ty", function()
       checkmate.add_metadata("context")
     end, { desc = "Add context metadata to selection" })
     map("n", "<leader>tp", function()
