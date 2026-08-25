@@ -89,4 +89,11 @@ vim.api.nvim_create_autocmd("LspAttach", {
   end,
 })
 
+-- Notify to run dotsync after editing mint-dotfiles configs
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern = { "*/mint-dotfiles/home/**" },
+  callback = function()
+    vim.notify("Config changed — run :!dotsync to sync", vim.log.levels.INFO, { title = "Dotfiles" })
+  end,
+})
 return M

@@ -26,6 +26,7 @@ alias vim='nvim'
 alias oc='opencode'
 alias preview='bat --style=plain --paging=always'
 alias wm='workmux'
+alias dotsync='cd ~/mint-dotfiles && ./sync-from-home.sh && git diff'
 
 if [[ -o interactive ]]; then
   alias ls='eza --icons --group-directories-first -a'
