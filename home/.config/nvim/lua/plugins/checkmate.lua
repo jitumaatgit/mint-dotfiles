@@ -154,7 +154,12 @@ return {
     local checkmate = require("checkmate")
 
     -- Core todo operations
-    map("n", "<leader>tn", api.create_todo_normal, { desc = "Create todo" })
+    map("n", "<leader>tn", function()
+      checkmate.create()
+    end, { desc = "Create todo" })
+    map("x", "<leader>tn", function()
+      checkmate.create()
+    end, { desc = "Create todos from selection" })
     map("n", "<leader>tt", checkmate.toggle, { desc = "Toggle todo" })
     map("x", "<leader>tt", checkmate.toggle, { desc = "Toggle selected todos" })
     map("n", "<leader>tc", checkmate.check, { desc = "Check todo" })
