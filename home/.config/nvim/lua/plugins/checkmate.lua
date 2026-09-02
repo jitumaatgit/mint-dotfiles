@@ -129,9 +129,9 @@ return {
       backend = "snacks",
     },
 
-    -- Smart toggle behavior
+    -- Smart toggle behavior - DISABLED: causes infinite loop with render-markdown
     smart_toggle = {
-      enabled = true,
+      enabled = false,
     },
 
     -- Archive completed todos
@@ -140,9 +140,9 @@ return {
       heading = { title = "Archived", level = 2 },
     },
 
-    -- Linting
+    -- Linting - DISABLED: causes infinite loop with render-markdown on typing "- [ ]"
     lint = {
-      enabled = true,
+      enabled = false,
     },
   },
   config = function(_, opts)
