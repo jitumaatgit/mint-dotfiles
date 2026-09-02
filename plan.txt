@@ -1,4 +1,0 @@
-Toolchain Integration:
-- Microsandbox: Image‑centric; pass an OCI image with all tooling baked in or use custom Dockerfile.
-- Workmux Container: Custom Dockerfile or host‑command proxy; no built‑in Nix.
-- Workmux Lima VM: Built‑in Nix/Devbox for provisioning, plus custom provisioning scripts.
