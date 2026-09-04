@@ -28,4 +28,4 @@ fi
 
 # Default browser for CLI tools
 export BROWSER="zen-browser"
-conky &
+conky -c ~/.config/conky/mocha.conf &
