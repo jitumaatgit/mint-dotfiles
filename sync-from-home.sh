@@ -1,18 +1,10 @@
 #!/usr/bin/env bash
 # sync-from-home.sh - pull live config changes from $HOME into the repo
-#
-# The repo's home/ directory is the allowlist: only files already tracked
-# there are synced, so nothing new leaks in from $HOME. Stow symlinks are
-# dereferenced (rsync -L), so syncing a stowed file copies its content back
-# onto itself (a no-op) instead of replacing the repo file with a symlink.
-#
-# To start tracking a NEW config, add it to home/ and stow it first.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$SCRIPT_DIR"
-REPO_HOME="$REPO_ROOT/home"
+REPO_HOME="$SCRIPT_DIR/home"
 
 echo "🔄 Syncing tracked files from $HOME to $REPO_HOME"
 

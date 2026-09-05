@@ -3,24 +3,60 @@
 Dotfiles for the Linux Mint machine. Companion to [`nixarch-dotfiles`](https://github.com/jitumaatgit/nixarch-dotfiles) (Arch + Nix + Home Manager on the Dell Latitude 7450).
 
 ## Overview
-This repository holds dotfiles for my Linux Mint machine.  All config files that live in directories under `$HOME` such as `~/.config`, `~/.vimrc`, `~/.bashrc`, etc. are managed from this repo.
 
-The repository is intended to be used with **GNU stow**: it creates a symlink in the home directory that points to the file in the repo.  Run `stow -t $HOME .` from the repo root to deploy.
+This repository holds dotfiles for my Linux Mint machine. All config files that live in directories under `$HOME` such as `~/.config`, `~/.vimrc`, `~/.bashrc`, etc. are managed from this repo.
 
-If you want to copy an existing config file into the repo use `stow --add <file> -t ~`.  Updates to the config files are managed by editing the file in this repository, then rerunning `stow` after committing.
+The repository uses **GNU stow**: it creates symlinks in the home directory that point to the files in this repo.
 
-The structure of the repo is intentionally flat ― every dotfile lives in a sub‑directory named after the destination directory (e.g. `nvim/` for `~/.config/nvim`).
-* Any directory that is not tracked will be ignored by stow.
+### Development
 
----
+#### Installation
 
-Detailed usage:
+Run `./install.sh` to deploy all dotfiles using GNU Stow:
 
 ```bash
-# pull latest changes
-git pull
-# install all symlinks
-stow -t $HOME .
-# remove a particular directory
-stow -D nvim -t $HOME
+./install.sh
 ```
+
+The script will:
+- Check for Stow and guide installation if missing
+- Symlink the `home/` package to `$HOME`
+
+#### Syncing from live system
+
+Run `./sync-from-home.sh` to copy any live config changes back into the repo. Only files already tracked in `home/` are synced.
+
+```bash
+./sync-from-home.sh
+git add -p && git commit -m "Sync configs"
+```
+
+### Stow workflow
+
+- All dotfiles are in `home/` with the same structure as `$HOME`
+- Use `stow <package> -t $HOME` to deploy, `-D` to remove
+- The `home` package contains all tracked files
+
+### Example commands
+
+```bash
+# Deploy all dotfiles
+stow -t $HOME home
+
+# Remove a specific package
+stow -D nvim -t $HOME
+
+# Deploy a single package
+stow -t $HOME .config
+
+# Remove all dotfiles (dry-run)
+stow -D -t $HOME --dry-run home
+```
+
+## Structure
+
+- `home/`: dotfiles root (mirrors `$HOME`), managed by stow
+- `docs/`: documentation
+- `notes/`: markdown notes
+- `install.sh`: deployment script
+- `sync-from-home.sh`: sync script for live changes
