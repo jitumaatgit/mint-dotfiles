@@ -10,9 +10,15 @@
 #   $1 = pre | post
 #   $2 = suspend | suspend-then-hibernate | hibernate | hybrid-sleep
 #
+# THIS HOOK NEVER FAILS THE SLEEP TRANSITION. A non-zero exit from a
+# systemd-sleep hook aborts the suspend, and a laptop that refuses to suspend
+# will drain its battery and overheat in a bag. So every path exits 0. If a
+# repair cannot be made, that is logged and the suspend continues - worst case
+# is the pre-existing behaviour (a hibernation image that may not resume), which
+# is strictly better than a machine that will not sleep.
+#
 # A repair rewrites GRUB_CMDLINE_LINUX_DEFAULT and runs update-grub, so it can
-# take a few seconds. That is acceptable on the pre-hibernate path because the
-# alternative is losing the session.
+# take a few seconds. Measured cost when nothing is wrong: ~0.1s.
 
 case "$1" in
     pre) ;;
@@ -22,5 +28,12 @@ esac
 [ -x /usr/local/sbin/check-swap-offset ] || exit 0
 [ -e /swapfile ] || exit 0
 
-# --quiet: print only when something is wrong. Repair is the default action.
-/usr/local/sbin/check-swap-offset --quiet
+logger -t check-swap-offset "pre-sleep check (operation: ${2:-unknown})"
+
+# --quiet prints only when something is wrong or was repaired. Capture it so it
+# lands in the journal, and never let the exit status escape. timeout(1) bounds
+# the worst case: a hung update-grub must not hold the sleep transition open.
+out="$(timeout 90 /usr/local/sbin/check-swap-offset --quiet 2>&1)" || true
+[ -n "$out" ] && logger -t check-swap-offset "resume_offset drift: $out"
+
+exit 0

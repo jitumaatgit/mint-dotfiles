@@ -47,6 +47,46 @@ sleep transition catches drift exactly when it matters.
 A repair rewrites `GRUB_CMDLINE_LINUX_DEFAULT` and runs `update-grub` — a few
 seconds — which is an easy trade against losing a session.
 
+Per `systemd-sleep(8)`, hooks receive `pre`/`post` plus the action name, and
+*"execution of the action is not continued until all executables have
+finished"* — so the repair always completes before the image is written.
+
+## The hook never blocks sleep
+
+A non-zero exit from a `systemd-sleep` hook aborts the transition. For a laptop
+that is a real hazard: a machine that refuses to suspend will keep running in a
+bag, draining the battery and overheating. So the hook **always exits 0**. If a
+repair cannot be made it is logged, and the suspend proceeds — worst case is the
+pre-existing behaviour (an image that may not resume), which is strictly better
+than a machine that will not sleep. The call is also wrapped in `timeout 90` so a
+hung `update-grub` cannot hold the transition open.
+
+Measured cost when nothing is wrong: **~0.11 s**.
+
+## Verifying without suspending
+
+`sleep.target` has `RefuseManualStart=yes`, so a real transition cannot be
+faked. Check the wiring declaratively instead:
+
+```sh
+# the binary that scans /usr/lib/systemd/system-sleep
+systemctl show systemd-hibernate.service -p ExecStart
+# sleep.target must precede the hibernation unit
+systemctl show sleep.target -p Before
+systemctl show systemd-hibernate.service -p After
+# the timer side
+systemctl list-timers check-swap-offset.timer
+# runs so far
+journalctl -u check-swap-offset.service
+```
+
+To confirm the hook itself is invoked on a real transition, suspend or hibernate
+once and look for its own journal lines:
+
+```sh
+journalctl -t check-swap-offset
+```
+
 ## What it checks
 
 1. `resume_offset=` in `GRUB_CMDLINE_LINUX_DEFAULT` equals the swapfile's real offset
