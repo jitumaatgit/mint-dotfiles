@@ -1,0 +1,16 @@
+[Unit]
+Description=Verify hibernation resume_offset matches the swapfile
+Documentation=file:///usr/local/sbin/check-swap-offset --help
+ConditionPathExists=/swapfile
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/check-swap-offset --quiet
+# A repair rewrites GRUB and runs update-grub, which is slow but rare.
+TimeoutStartSec=180
+Nice=10
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,280 @@
+#!/usr/bin/env bash
+# check-swap-offset - keep resume_offset in sync with the hibernation swapfile.
+#
+# WHY THIS EXISTS
+#   This machine hibernates to a swap FILE (/swapfile). The kernel finds the
+#   hibernation image using resume_offset=, which is the swapfile's FIRST
+#   PHYSICAL EXTENT in 4 KiB blocks. Recreating or defragmenting /swapfile
+#   changes that extent.
+#
+#   With a stale resume_offset the boot initramfs cannot find the image, so a
+#   hibernated session is silently lost. The only clue is this in the log:
+#
+#       PM: Image not found (code -16)
+#
+#   The offset has already changed once on this machine: 60690432 -> 2177024
+#   when the swapfile was rebuilt from 10 GiB to 20 GiB.
+#
+# WHAT IT CHECKS
+#   1. resume_offset= in GRUB_CMDLINE_LINUX_DEFAULT == swapfile's real offset
+#   2. the computed offset actually lands on the swap header (blkid -p -O)
+#   3. resume= UUID in the cmdline == the root filesystem's UUID
+#   4. RESUME= in /etc/initramfs-tools/conf.d/resume == the root UUID
+#
+# WHY IT WRITES GRUB, NOT JUST /sys
+#   At resume time the kernel takes resume_offset from the kernel command line,
+#   not from sysfs. Writing only /sys/power/resume_offset would place the image
+#   at the live offset while resume still looked at GRUB's stale one - the exact
+#   failure we are trying to prevent. So repairs update GRUB and regenerate.
+#
+# USAGE
+#   sudo check-swap-offset            # report, repair any drift, regenerate GRUB
+#   sudo check-swap-offset --check    # report only; exit 1 if drifted
+#   sudo check-swap-offset --quiet    # silent unless something is wrong
+#   sudo check-swap-offset --install  # install tool + timer + pre-sleep hook
+#
+# EXIT CODES
+#   0 = in sync, or repaired successfully
+#   1 = drift detected (--check) or repair failed
+#   2 = precondition / setup error
+set -uo pipefail
+
+SWAPFILE="${SWAPFILE:-/swapfile}"
+SWAP_WAIT_SECS="${SWAP_WAIT_SECS:-0}"
+GRUB_DEFAULTS=/etc/default/grub
+GRUB_CFG=/boot/grub/grub.cfg
+RESUME_CONF=/etc/initramfs-tools/conf.d/resume
+INSTALL_PATH=/usr/local/sbin/check-swap-offset
+SLEEP_HOOK=/usr/lib/systemd/system-sleep/50-check-swap-offset
+SELF="$(readlink -f "${BASH_SOURCE[0]}")"
+SELF_DIR="$(dirname "$SELF")"
+
+QUIET=0
+MODE=repair
+CONF_DRIFT=0
+
+if [ -t 1 ]; then
+    C_RED=$'\033[31m'; C_GRN=$'\033[32m'; C_YEL=$'\033[33m'; C_0=$'\033[0m'
+else
+    C_RED=; C_GRN=; C_YEL=; C_0=
+fi
+say()  { [ "$QUIET" -eq 1 ] || printf '%s\n' "$*"; }
+ok()   { [ "$QUIET" -eq 1 ] || printf '%s\n' "${C_GRN}$*${C_0}"; }
+warn() { printf '%s\n' "${C_YEL}$*${C_0}" >&2; }
+err()  { printf '%s\n' "${C_RED}$*${C_0}" >&2; }
+die()  { err "ERROR: $*"; exit 2; }
+
+usage() {
+    cat <<'EOF'
+check-swap-offset - keep hibernation resume_offset in sync with /swapfile
+
+Usage:
+  sudo check-swap-offset            report, repair any drift, regenerate GRUB
+  sudo check-swap-offset --check    report only; exit 1 if drifted
+  sudo check-swap-offset --quiet    silent unless something is wrong
+  sudo check-swap-offset --install  install tool + systemd timer + pre-sleep hook
+  sudo check-swap-offset --help     this message
+
+Environment:
+  SWAPFILE=/path       swapfile to inspect (default /swapfile)
+  SWAP_WAIT_SECS=N     wait up to N seconds for the swap device to appear
+
+Run this after recreating, resizing or defragmenting the hibernation swapfile.
+EOF
+}
+
+require_root() {
+    [ "$(id -u)" -eq 0 ] || die "must run as root (filefrag needs read access to $SWAPFILE)"
+}
+
+# --- helpers ------------------------------------------------------------------
+# Physical offset of the first extent, in 4 KiB blocks == resume_offset.
+# filefrag prints "  0:  0..  0:  2177024..  2177024:  1:"; stripping ".."
+# leaves the first physical block in $4. Validated against the swap header by
+# blkid below, so a filefrag output change cannot pass silently.
+swapfile_offset() {
+    filefrag -v "$SWAPFILE" 2>/dev/null | awk '/^ *0:/ { gsub(/\.\./, ""); print $4; exit }'
+}
+
+grub_cmdline() {
+    awk -F'"' '/^GRUB_CMDLINE_LINUX_DEFAULT=/{print $2}' "$GRUB_DEFAULTS" 2>/dev/null
+}
+
+cmdline_value() { # $1 = key without '=' (resume, resume_offset)
+    grub_cmdline | tr ' ' '\n' \
+        | awk -F= -v k="$1" '$1==k { sub(k"=", ""); print; exit }'
+}
+
+root_dev()          { findmnt -no SOURCE /; }
+root_uuid()         { blkid -s UUID -o value "$(root_dev)"; }
+# Reads e.g. "RESUME=UUID=849a1379-..." and yields just the UUID.
+# Note: splitting on '=' is wrong here - the line has two of them.
+resume_conf_uuid()  {
+    sed -n 's/^RESUME=//p' "$RESUME_CONF" 2>/dev/null \
+        | sed 's/^UUID=//' | head -1
+}
+
+regen_grub() {
+    command -v update-grub >/dev/null 2>&1 || { warn "  update-grub not found"; return 1; }
+    update-grub >/dev/null 2>&1 && { ok "  regenerated $GRUB_CFG"; return 0; }
+    err "  update-grub FAILED; boot config may be stale"; return 1
+}
+
+# --- installer ----------------------------------------------------------------
+do_install() {
+    require_root
+    say "Installing check-swap-offset..."
+    install -m 0755 -o root -g root "$SELF" "$INSTALL_PATH"
+    say "  → $INSTALL_PATH"
+
+    local f
+    for f in check-swap-offset.service check-swap-offset.timer; do
+        if [ -f "$SELF_DIR/$f" ]; then
+            install -m 0644 -o root -g root "$SELF_DIR/$f" "/etc/systemd/system/$f"
+            say "  → /etc/systemd/system/$f"
+        else
+            warn "  $f missing next to this script; skipping"
+        fi
+    done
+
+    if [ -f "$SELF_DIR/50-check-swap-offset" ]; then
+        install -d -m 0755 "$(dirname "$SLEEP_HOOK")"
+        install -m 0755 -o root -g root "$SELF_DIR/50-check-swap-offset" "$SLEEP_HOOK"
+        say "  → $SLEEP_HOOK"
+    else
+        warn "  50-check-swap-offset missing next to this script; skipping pre-sleep hook"
+    fi
+
+    systemctl daemon-reload
+    if systemctl enable --now check-swap-offset.timer >/dev/null 2>&1; then
+        say "  → timer enabled and started"
+    else
+        warn "  could not enable the timer"
+    fi
+
+    say ""
+    say "Verify with:"
+    say "  sudo $INSTALL_PATH --check"
+    say "  systemctl list-timers check-swap-offset.timer"
+    exit 0
+}
+
+# --- argument parsing ---------------------------------------------------------
+case "${1:-}" in
+    -h|--help) usage; exit 0 ;;
+    --install) do_install ;;
+    --check)   MODE=check ;;
+    --quiet)   QUIET=1 ;;
+    "")        ;;
+    *)         err "unknown option: $1"; usage; exit 2 ;;
+esac
+[ -n "${2:-}" ] && { err "unexpected extra argument: $2"; exit 2; }
+
+require_root
+[ -e "$SWAPFILE" ] || die "$SWAPFILE does not exist (nothing to resume from)"
+[ -r "$GRUB_DEFAULTS" ] || die "$GRUB_DEFAULTS not found"
+
+if [ "$SWAP_WAIT_SECS" -gt 0 ]; then
+    for _ in $(seq 1 "$SWAP_WAIT_SECS"); do
+        { [ -b "$(root_dev)" ] && [ -r "$SWAPFILE" ]; } && break
+        sleep 1
+    done
+fi
+
+# --- gather reality -----------------------------------------------------------
+LIVE_OFFSET="$(swapfile_offset)"
+[ -n "$LIVE_OFFSET" ] || die "could not read $SWAPFILE extents (root? file exists?)"
+
+CONF_OFFSET="$(cmdline_value resume_offset)"
+CONF_RESUME_UUID="$(cmdline_value resume | sed 's/^UUID=//')"
+ROOT_UUID="$(root_uuid)"
+CONF_FILE_UUID="$(resume_conf_uuid)"
+
+say "swapfile        : $SWAPFILE"
+say "root filesystem : $(root_dev)  (UUID $ROOT_UUID)"
+say ""
+say "resume_offset   : live=$LIVE_OFFSET   configured=${CONF_OFFSET:-<missing>}"
+say "resume UUID     : root=$ROOT_UUID   configured=${CONF_RESUME_UUID:-<missing>}"
+say "conf.d/resume   : ${CONF_FILE_UUID:-<missing>}"
+say ""
+
+DRIFT=0
+
+if [ "$LIVE_OFFSET" != "$CONF_OFFSET" ]; then
+    warn "DRIFT: resume_offset is ${CONF_OFFSET:-missing}, but $SWAPFILE starts at $LIVE_OFFSET."
+    warn "       Hibernation would fail to resume ('PM: Image not found')."
+    DRIFT=1
+else
+    ok "OK: resume_offset matches the swapfile ($LIVE_OFFSET)."
+fi
+
+PROBE=$((LIVE_OFFSET * 4096))
+FOUND_TYPE="$(blkid -p -O "$PROBE" "$(root_dev)" -s TYPE -o value 2>/dev/null)"
+if [ "$FOUND_TYPE" = "swap" ]; then
+    ok "OK: offset validates (blkid sees 'swap' at byte $PROBE)."
+else
+    warn "DRIFT: blkid sees '${FOUND_TYPE:-nothing}' at byte $PROBE, not 'swap'."
+    DRIFT=1
+fi
+
+if [ "$CONF_RESUME_UUID" != "$ROOT_UUID" ]; then
+    warn "DRIFT: cmdline resume=UUID=${CONF_RESUME_UUID:-<missing>} != root UUID $ROOT_UUID."
+    DRIFT=1
+else
+    ok "OK: cmdline resume= points at the root filesystem."
+fi
+
+if [ "$CONF_FILE_UUID" != "$ROOT_UUID" ]; then
+    warn "DRIFT: $RESUME_CONF has '${CONF_FILE_UUID:-<missing>}', expected $ROOT_UUID."
+    warn "       Needs updating AND an initramfs rebuild."
+    CONF_DRIFT=1
+    DRIFT=1
+else
+    ok "OK: initramfs resume config matches the root filesystem."
+fi
+
+say ""
+
+if [ "$MODE" = check ]; then
+    if [ "$DRIFT" -eq 1 ]; then
+        err "RESULT: drifted. Run 'sudo $0' to repair."
+        exit 1
+    fi
+    ok "RESULT: hibernation resume config is in sync."
+    exit 0
+fi
+
+if [ "$DRIFT" -eq 0 ]; then
+    ok "Nothing to do."
+    exit 0
+fi
+
+# --- repair -------------------------------------------------------------------
+say "Repairing..."
+
+NEW_LINE="$(grub_cmdline | tr ' ' '\n' \
+    | awk 'NF && $0 !~ /^resume=/ && $0 !~ /^resume_offset=/' \
+    | tr '\n' ' ' | sed 's/ *$//')"
+NEW_LINE="$NEW_LINE resume=UUID=$ROOT_UUID resume_offset=$LIVE_OFFSET"
+
+cp -a "$GRUB_DEFAULTS" "${GRUB_DEFAULTS}.bak-$(date +%F-%H%M%S)"
+sed -i "s|^GRUB_CMDLINE_LINUX_DEFAULT=\".*\"|GRUB_CMDLINE_LINUX_DEFAULT=\"$NEW_LINE\"|" "$GRUB_DEFAULTS" \
+    || { err "  failed to update $GRUB_DEFAULTS"; exit 1; }
+say "  updated $GRUB_DEFAULTS"
+
+regen_grub || exit 1
+
+if [ "$CONF_DRIFT" -eq 1 ]; then
+    install -d -m 0755 "$(dirname "$RESUME_CONF")"
+    printf 'RESUME=UUID=%s\n' "$ROOT_UUID" > "$RESUME_CONF"
+    say "  updated $RESUME_CONF"
+    if command -v update-initramfs >/dev/null 2>&1; then
+        update-initramfs -u -k all >/dev/null 2>&1 \
+            && say "  rebuilt initramfs images" \
+            || { err "  update-initramfs FAILED"; exit 1; }
+    fi
+fi
+
+say ""
+ok "Repaired: resume_offset=$LIVE_OFFSET, resume=UUID=$ROOT_UUID"
+exit 0

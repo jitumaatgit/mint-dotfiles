@@ -1,0 +1,26 @@
+#!/bin/sh
+# 50-check-swap-offset - repair hibernation resume_offset before suspending.
+#
+# This is the strongest guarantee available without intercepting file writes:
+# creating or resizing a swapfile is a plain file operation and generates no
+# udev event, but it ALWAYS precedes a hibernation attempt. So we verify (and
+# if needed repair) the resume configuration on every sleep transition.
+#
+# Invoked by systemd before and after suspend/hibernate with:
+#   $1 = pre | post
+#   $2 = suspend | suspend-then-hibernate | hibernate | hybrid-sleep
+#
+# A repair rewrites GRUB_CMDLINE_LINUX_DEFAULT and runs update-grub, so it can
+# take a few seconds. That is acceptable on the pre-hibernate path because the
+# alternative is losing the session.
+
+case "$1" in
+    pre) ;;
+    *) exit 0 ;;   # nothing to do on the post path
+esac
+
+[ -x /usr/local/sbin/check-swap-offset ] || exit 0
+[ -e /swapfile ] || exit 0
+
+# --quiet: print only when something is wrong. Repair is the default action.
+/usr/local/sbin/check-swap-offset --quiet

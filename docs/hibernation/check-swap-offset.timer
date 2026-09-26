@@ -1,0 +1,15 @@
+[Unit]
+Description=Periodically verify hibernation resume_offset matches the swapfile
+Documentation=file:///usr/local/sbin/check-swap-offset --help
+
+[Timer]
+# Catch drift even if nothing logged in for a while.
+OnBootSec=2min
+OnUnitActiveSec=30min
+# Spread wakeups; this is a cheap check.
+RandomizedDelaySec=5min
+Persistent=true
+Unit=check-swap-offset.service
+
+[Install]
+WantedBy=timers.target
