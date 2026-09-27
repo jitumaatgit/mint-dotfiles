@@ -193,3 +193,9 @@ plan.txt
 /nvim
 /wazuh-install.sh
 /wazuh-install-files.tar
+
+# Oracle VirtualBox Extension Pack: ~96MB binary, and its bundled PUEL
+# (section 3(2)(b)) prohibits re-distribution. This repo's origin is public.
+# Fetch it from virtualbox.org if a VM needs it.
+/Oracle_VirtualBox_Extension_Pack-*.vbox-extpack
+/ExtPack-license.txt
