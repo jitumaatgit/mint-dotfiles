@@ -1,0 +1,46 @@
+--- a/packages/ai/src/providers/transform-messages.ts
++++ b/packages/ai/src/providers/transform-messages.ts
+@@
+ // Existing code remains unchanged...
+@@
+ function deduplicateToolCallIds(
+ 	messages: Message[],
+ 	originScope: ToolCallOriginScope,
+ 	maxToolCallIdLength = MAX_TOOL_CALL_ID_LENGTH,
+ 	duplicateSuffixPrefix = "_dup",
+ ) {
+@@
+ }
++
++/**
++ * Convert orphaned `toolResult` messages to `user` messages.
++ * A toolResult that has no matching assistant `toolCall` in the current
++ * conversation can only arise when the server sends a result for a tool call
++ * that was never registered locally (e.g., deleted or pruned).  The
++ * original issue caused consecutive `tool` items with no preceding
++ * `assistant` turn to be sent to the gateway which rejected the payload.
++ * See issue #6892 for details.
++ */
++function sanitizeOrphanToolResults(messages: Message[]): Message[] {
++    const usedToolCallIds = new Set<string>();
++    for (const msg of messages) {
++        if (msg.role === "assistant") {
++            for (const block of msg.content) {
++                if (block.type === "toolCall") usedToolCallIds.add(block.id);
++            }
++        }
++    }
++    return messages.map(msg => {
++        if (msg.role !== "toolResult") return msg;
++        if (usedToolCallIds.has(msg.toolCallId)) return msg;
++        // Convert to a user message with the same ID and content
++        const userMsg: UserMessage = {
++            role: "user",
++            content: [{ type: "text", text: msg.content?.[0]?.text ?? "[tool result omitted]" }],
++            done: msg.done,
++        };
++        // Preserve meta‑fields if any
++        return { ...userMsg };
++    });
++}
+*** End Patch
