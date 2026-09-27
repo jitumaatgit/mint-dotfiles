@@ -1,0 +1,20 @@
+providers:
+  fcm-router:
+    baseUrl: http://127.0.0.1:19280/v1
+    apiKey: fcm-local
+    api: openai-completions
+    auth: apiKey
+    authHeader: true
+    disableStrictTools: true
+    models:
+      - id: fcm
+        name: FCM Auto-Router
+        input: [text]
+        reasoning: false
+        contextWindow: 128000
+        maxTokens: 16384
+        cost:
+          input: 0
+          output: 0
+          cacheRead: 0
+          cacheWrite: 0

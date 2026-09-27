@@ -1,0 +1,332 @@
+modelRoles:
+  # --- opencode-go: free tier, shared prompt cache across all six roles ---
+  smol: opencode-go/space-bunny-free
+  task: opencode-go/space-bunny-free
+  commit: opencode-go/space-bunny-free
+  tiny: opencode-go/space-bunny-free
+  memory: opencode-go/space-bunny-free
+  # 1M ctx / 524K max-out; thinking suffix dropped (reasoning unused)
+  slow: opencode-go/space-bunny-free
+
+  # --- fcm: $0, fails over across ~20 providers. 128K ctx / 16K max-out ---
+  # slow stays on opencode-go: 16K max-out truncates thorough analysis.
+  plan: fcm-router/fcm
+  advisor: fcm-router/fcm
+  default: fcm-router/fcm:off
+  vision: fcm-router/fcm
+
+  # --- model-kind: opencode-go serves no non-chat models ---
+  web: web/exa
+symbolPreset: unicode
+theme:
+  dark: dark-catppuccin
+setupVersion: 2
+defaultThinkingLevel: auto
+compaction:
+  enabled: true
+  thresholdTokens: -1
+  midTurnEnabled: true
+  dropUseless: true
+  autoContinue: true
+  handoffSaveToDisk: true
+  methodOrder:
+    - shake
+    - handoff
+    - snapcompact
+    - remote
+    - soft
+  thresholdPercent: 70
+  idleEnabled: true
+  idleThresholdTokens: 200000
+  experimentalContextManagement: true
+  idleTimeoutSeconds: 1800
+retry:
+  enabled: true
+  maxRetries: 2
+  modelFallback: true
+  fallbackChains:
+    web:
+      - web/kagi
+      - web/parallel
+      - web/perplexity
+      - google/gemini-2.5-flash
+      - google-antigravity/gemini-2.5-flash
+      - anthropic/claude-haiku-4-5
+      - openai-codex/gpt-5.6-luna
+      - openai-codex/gpt-5.6
+      - openai-codex/gpt-5.5
+      - xai/grok-4.5
+      - xai-oauth/grok-4.5
+      - web/zai
+      - web/tinyfish
+      - web/jina
+      - web/tavily
+      - web/firecrawl
+      - web/brave
+      - web/kimi
+      - web/synthetic
+      - web/ollama
+      - web/searxng
+      - web/startpage
+      - web/duckduckgo
+      - web/ecosia
+      - web/google
+      - web/mojeek
+      - web/public
+    # Bidirectional opencode-go <-> fcm fallback. Each chain is a flat
+    # ordered list for its own role; roles do not recurse into each other.
+
+    # Free-tier opencode-go roles: same-provider free alternates first,
+    # then fcm ($0, ~20-provider failover) as the resilient floor.
+    smol:
+      - opencode-go/ox-alpha-free
+      - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
+    task:
+      - opencode-go/ox-alpha-free
+      - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
+    commit:
+      - opencode-go/ox-alpha-free
+      - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
+    tiny:
+      - opencode-go/ox-alpha-free
+      - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
+    memory:
+      - opencode-go/ox-alpha-free
+      - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
+
+    # slow terminates on a PAID 1M-ctx model, not fcm: 16K max-out on
+    # fcm would silently truncate a thorough-analysis turn.
+    slow:
+      - opencode-go/ox-alpha-free
+      - fcm-router/fcm
+      - opencode-go/deepseek-v4-flash
+
+    # fcm-primary roles fall back to opencode-go.
+    plan:
+      - opencode-go/space-bunny-free
+      - opencode-go/ox-alpha-free
+    advisor:
+      - opencode-go/space-bunny-free
+      - opencode-go/ox-alpha-free
+    default:
+      - opencode-go/space-bunny-free
+      - opencode-go/ox-alpha-free
+      - opencode-go/mimo-v2.5
+
+    # vision tolerates fcm's 16K max-out (image answers are short).
+    vision:
+      - opencode-go/mimo-v2.5
+      - opencode-go/ox-alpha-free
+      - fcm-router/fcm
+  usageAwareFallback: false
+  usageReservePct: 25
+  usageReservePolicy: confirm
+  waitForUsageReset: false
+  fallbackRevertPolicy: cooldown-expiry
+statusLine:
+  separator: pipe
+  transparent: true
+  compactThinkingLevel: false
+  contextLine: embedded
+terminal:
+  showProgress: true
+tui:
+  tight: false
+  scrollbackRebuild: true
+  vimMode: true
+  vimModeDisplay: text
+  reactions: false
+display:
+  shimmer: classic
+  showTokenUsage: true
+  cacheMissMarker: true
+  showTurnTime: true
+personality: pragmatic
+advisor:
+  enabled: false
+  syncBacklog: "1"
+  immuneTurns: 0
+  maxNotesPerUpdate: 1
+prewalk:
+  enabled: false
+steeringMode: one-at-a-time
+followUpMode: all
+interruptMode: immediate
+loop:
+  mode: compact
+  conditionTimeoutMs: 30000
+doubleEscapeAction: tree
+treeFilterMode: default
+autocompleteMaxVisible: 15
+emojiAutocomplete: false
+paste:
+  largeMenuThreshold: 100
+tools:
+  approvalMode: yolo
+  format: auto
+  xdev: true
+  outputMaxColumns: 768
+  abortOnFabricatedResult: true
+  approval:
+    bash: allow
+    read: allow
+    write: allow
+    edit: allow
+    find: allow
+    eval: allow
+    computer: allow
+    grep: allow
+    glob: allow
+    fetch: allow
+    browser: allow
+    launch: allow
+  speculativeExecution:
+    enabled: false
+    maxInFlight: 1
+  maxTimeout: 300
+error:
+  notify: "on"
+recap:
+  enabled: true
+  idleSeconds: 300
+startup:
+  quiet: true
+features:
+  unexpectedStopDetection: smart
+contextPromotion:
+  enabled: false
+memory:
+  backend: mnemopi
+autolearn:
+  enabled: true
+mnemopi:
+  scoping: per-project-tagged
+  enhancedRecall: true
+  proactiveLinking: true
+read:
+  renderMarkdown: false
+  defaultLimit: 200
+  summarize:
+    enabled: true
+bash:
+  autoBackground:
+    enabled: true
+  enabled: true
+  direnv: auto
+  allowCompoundCommands: true
+todo:
+  eager: default
+  reminders: true
+composer:
+  shape: borderless
+tier:
+  advisor: inherit
+  openai: flex
+  subagent: inherit
+modelRoleStorage: global
+dev:
+  autoqa: false
+github:
+  enabled: true
+inlineToolDescriptors: "on"
+bashInterceptor:
+  enabled: false
+task:
+  batch: true
+  maxConcurrency: 4
+  maxRecursionDepth: 1
+  maxRuntimeMs: 300000
+  maxEffort: medium
+  isolation:
+    commits: generic
+  eager: default
+  enableEffort: true
+  prewalk: true
+  disabledAgents:
+    []
+goal:
+  enabled: true
+includeModelInPrompt: true
+skillful: true
+includeWorkspaceTree: true
+edit:
+  recoverInlineEdits: true
+  mode: hashline
+  streamingAbort: false
+  autoRepair:
+    enabled: true
+lsp:
+  shared: true
+  formatOnWrite: true
+  diagnosticsOnEdit: true
+  enabled: true
+commands:
+  enableOpencodeUser: true
+providers:
+  webSearchTimeoutSeconds: 300
+  tinyModelDtype: default
+  streamFirstEventTimeoutSeconds: -1
+  streamIdleTimeoutSeconds: -1
+  maxInFlightRequests:
+    {}
+  cacheRetention: none
+  openaiWebsockets: auto
+  kimiApiFormat: auto
+  openaiLiveSteering: true
+  autoThinkingMaxEffort: xhigh
+provider:
+  appendOnlyContext: auto
+secrets:
+  enabled: true
+ask:
+  timeout: 120
+update:
+  channel: canary
+async:
+  enabled: true
+astGrep:
+  enabled: false
+find:
+  enabled: "off"
+checkpoint:
+  enabled: false
+omitThinking: false
+proseOnlyThinking: true
+model:
+  loopGuard:
+    enabled: true
+    checkAssistantContent: false
+    toolCallReminder: false
+  toolCallLoopGuard:
+    enabled: true
+textVerbosity: medium
+externalThinking: false
+snapcompact:
+  toolResults: false
+ttsr:
+  builtinRules: true
+  judge: auto
+  interruptMode: always
+  enabled: false
+grep:
+  enabled: true
+  contextAfter: 3
+  contextBefore: 1
+python:
+  kernelMode: session
+readLineNumbers: true
+computer:
+  enabled: false
+tasks:
+  todoClearDelay: 60
+cycleOrder:
+  - smol
+  - slow
+  - default
+power:
+  sleepPrevention: system

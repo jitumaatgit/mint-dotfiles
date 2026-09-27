@@ -1,0 +1,18 @@
+# Tracked from ~/.omp: config.yml (roles/settings) + models.yml (provider defs).
+# Everything else here is runtime state or a credential.
+*
+!.gitignore
+!agent/
+agent/*
+!agent/config.yml
+!agent/models.yml
+
+# Explicitly never track these, even if moved:
+# nvidia-direct was removed from models.yml; if re-added, use
+# `apiKey: NVIDIA_API_KEY` (env-name-or-literal) and NEVER inline the key.
+# secret-placeholder.key
+# kimi-device-id
+# *.db, *.db-wal, *.db-shm
+# sessions/, blobs/, memories/, cache/, terminal-sessions/
+# extensions/
+# keybindings.yml

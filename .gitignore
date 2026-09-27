@@ -188,5 +188,8 @@ docs/keyboard-toggle/
 test.md
 tradeoff_report.md
 plan.txt
-nvim
+# Anchor: bare "nvim" matched home/.config/nvim/ and silently ignored new
+# config files. Only the scratch clone at repo root should be ignored.
+/nvim
+/wazuh-install.sh
 /wazuh-install-files.tar

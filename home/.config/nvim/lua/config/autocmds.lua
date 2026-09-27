@@ -40,6 +40,13 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
     end)
   end,
 })
+-- Detect all log files for syntax highlighting
+vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
+  pattern = { "*.log", "syslog", "faillog", "lastlog", "messages", "dmesg" },
+  callback = function()
+    vim.bo.filetype = "log"
+  end,
+})
 
 -- Set PowerShell execution policy to Unrestricted for LSP
 -- Note: Scope CurrentUser does NOT require admin privileges

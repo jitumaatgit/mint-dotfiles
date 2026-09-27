@@ -98,33 +98,35 @@ return {
     end,
   },
   keys = {
-    { "<leader>nr", "<cmd>ObsidianRename<cr>", desc = "Rename note" },
+    { "<leader>nc", "<cmd>ObsidianRename<cr>", desc = "Rename note" },
     { "<leader>nn", "<cmd>ObsidianNew<cr>", desc = "New note" },
+    { "<leader>nd", "<cmd>ObsidianDailies<cr>", desc = "Open picker of this weeks daily notes" },
     { "<leader>nt", "<cmd>ObsidianToday<cr>", desc = "Open today's daily note" },
     { "<leader>ny", "<cmd>ObsidianToday -1<cr>", desc = "Open yesterday's note" },
     { "<leader>nu", "<cmd>ObsidianToday 1<cr>", desc = "Open tomorrow's note" },
-    { "<leader>nw", "<cmd>ObsidianWeekly<cr>", desc = "Open weekly note" },
+    { "<leader>nw", "<cmd>ObsidianWeeklyPrev<cr>", desc = "Open weekly note" },
     { "<leader>ns", "<cmd>ObsidianSearch<cr>", desc = "Search notes" },
     { "<leader>nb", "<cmd>ObsidianBacklinks<cr>", desc = "Show backlinks" },
-    { "<leader>nl", "<cmd>ObsidianLinks<cr>", desc = "Show outgoing links" },
+    { "<leader>no", "<cmd>ObsidianLinks<cr>", desc = "Show outgoing links" },
+    { "<leader>nl", "<cmd>ObsidianLink<cr>", desc = "link text to existing note", mode = "v" },
     { "<leader>ni", "<cmd>ObsidianPasteImg<cr>", desc = "Paste image" },
     { "<leader>ne", "<cmd>ObsidianExtractNote<cr>", desc = "Extract note from selection", mode = "v" },
   },
   config = function(_, opts)
     require("obsidian").setup(opts)
-  require("custom.weekly-note")
-  vim.api.nvim_create_user_command("ObsidianFollowLink", function(data)
-    if require("custom.weekly-note").follow_weekly_link() then
-      return
-    end
-    local client = require("obsidian").get_client()
-    local opts = {}
-    if data.args and string.len(data.args) > 0 then
-      opts.open_strategy = data.args
-    end
-    client:follow_link_async(nil, opts)
-  end, { nargs = "?", desc = "Follow link (with weekly note support)" })
-  vim.api.nvim_create_autocmd("FileType", {
+    require("custom.weekly-note")
+    vim.api.nvim_create_user_command("ObsidianFollowLink", function(data)
+      if require("custom.weekly-note").follow_weekly_link() then
+        return
+      end
+      local client = require("obsidian").get_client()
+      local opts = {}
+      if data.args and string.len(data.args) > 0 then
+        opts.open_strategy = data.args
+      end
+      client:follow_link_async(nil, opts)
+    end, { nargs = "?", desc = "Follow link (with weekly note support)" })
+    vim.api.nvim_create_autocmd("FileType", {
       pattern = "markdown",
       callback = function(ev)
         vim.keymap.set("n", "<CR>", function()

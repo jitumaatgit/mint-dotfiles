@@ -1,4 +1,4 @@
-# Managing Dotfiles with GNU Stow on Linux Mint
+# Managing Dotfiles with GNU Stow on Linux+Mint
 
 ## 1. Repository layout
 

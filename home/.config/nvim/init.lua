@@ -25,3 +25,6 @@ require("custom.trouble-fetch-fix").setup()
 
 -- Spawn omp terminal on first save of prompt notes
 require("custom.omp-prompt").setup()
+-- Open random note from ~/notes
+require("custom.random-note").setup()
+require("custom.checkmate_notify")
