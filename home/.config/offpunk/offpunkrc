@@ -1,0 +1,6 @@
+set width 100
+set linkmode end
+set timeout 30
+set history_size 500
+set archives_size 500
+handler application/pdf zathura %s
