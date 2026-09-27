@@ -41,11 +41,15 @@ vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   end,
 })
 -- Detect all log files for syntax highlighting
-vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-  pattern = { "*.log", "syslog", "faillog", "lastlog", "messages", "dmesg" },
-  callback = function()
-    vim.bo.filetype = "log"
-  end,
+vim.filetype.add({
+  extension = { log = "log" },
+  filename = {
+    syslog = "log",
+    faillog = "log",
+    lastlog = "log",
+    messages = "log",
+    dmesg = "log",
+  },
 })
 
 -- Set PowerShell execution policy to Unrestricted for LSP

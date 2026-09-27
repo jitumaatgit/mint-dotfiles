@@ -6,5 +6,4 @@ return {
   { "saghen/blink.cmp", enabled = false },
   { "saghen/blink.compat", enabled = false },
   { "NickvanDyke/opencode.nvim", enabled = false },
-  { "epwalsh/obsidian.nvim", enabled = true },
 }

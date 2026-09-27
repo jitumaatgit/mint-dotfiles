@@ -17,13 +17,6 @@ plugins=(
 #  # zsh-autopair
    # zsh-vim-mode
 
-# Cache compinit to speed up startup
-autoload -Uz compinit
-if [ -n "$(find ~/.zcompdump -mtime -1 2>/dev/null)" ]; then
-  compinit -C
-else
-  compinit
-fi
 source $ZSH/oh-my-zsh.sh
 
 # text object selection for quoted strings in command prompt
@@ -225,26 +218,8 @@ eval "$(pay-respects zsh)"
 # zen-browser launches the system Flatpak.
 export BROWSER="zen-browser"
 export NVM_DIR="$HOME/.nvm"
-node() {
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  command node "$@";
-}
-npm() {
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  command npm "$@";
-}
-npx() {
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  command npx "$@";
-}
-nvm() {
-  [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-  [ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
-  nvm "$@";
-}
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+[ -s "$NVM_DIR/bash_completion" ] && . "$NVM_DIR/bash_completion"
 
 [ -f ~/.free-coding-models.env ] && . ~/.free-coding-models.env  # free-coding-models-env
 
@@ -257,8 +232,13 @@ fpath=(/usr/local/lib/node_modules/tldr/bin/completion/zsh $fpath)
 # If you're using oh-my-zsh, you can force reload of completions:
 # autoload -U compinit && compinit
 
-# Check if compinit is already loaded, if not, load it
+# Cache compinit to speed up startup. Must run AFTER oh-my-zsh.sh and after
+# the tldr fpath entry above, or those completions are missed.
 if (( ! $+functions[compinit] )); then
   autoload -Uz compinit
-  compinit -C
+  if [ -n "$(find ~/.zcompdump -mtime -1 2>/dev/null)" ]; then
+    compinit -C
+  else
+    compinit
+  fi
 fi
