@@ -1,0 +1,57 @@
+Classify HTTP 402 (Payment Required) as a provider QUOTA failure instead of
+letting it fall through the `status >= 400` catch-all to INVALID_REQUEST.
+
+Target: free-coding-models src/core/router-v2/failure-classifier.js
+Package version this was generated against: 0.5.96
+Repo: https://github.com/vava-nessa/free-coding-models
+
+Why this matters
+----------------
+STATUS_KIND_MAP had no 402 entry, so classifyStatus() hit the
+`if (status >= 400) return FAILURE_KINDS.INVALID_REQUEST` catch-all. The
+INVALID_REQUEST verdict sets:
+
+    blame: 'client', healthDamage: false, failover: true
+
+Consequences when an upstream provider returns 402 (prepaid balance
+exhausted / daily cap / per-key spend cap):
+
+  1. fcm told the client "400 invalid_request", i.e. it blamed the
+     caller's request payload. Observed: a valid 83k-token request was
+     reported as malformed purely because the account balance (9349) was
+     smaller than the request.
+  2. healthDamage:false meant the circuit breaker never counted the
+     failure. Confirmed: exhausted models had no breaker record at all
+     while healthy models had 24.
+  3. autoHeal could not eject the exhausted models, so fcm kept routing
+     to them and burning every model in the set on doomed requests.
+
+Mapping 402 to FAILURE_KINDS.QUOTA yields:
+
+    blame: 'model', healthDamage: true, failover: true,
+    quotaPauseMs: <capped Retry-After>, clientStatus: 429
+
+so the breaker trips, autoHeal can replace the model, and the client is
+told the truth (a rate/quota condition, not a bad request).
+
+Apply with: patches/apply-fcm-402-patch.sh
+Re-apply after every `npm install -g free-coding-models` (it silently
+reverts in-place edits to a global package).
+
+--- a/src/core/router-v2/failure-classifier.js
++++ b/src/core/router-v2/failure-classifier.js
+@@ -55,6 +55,14 @@
+ // busy), not a provider-wide outage.
+ const STATUS_KIND_MAP = new Map([
+   [401, FAILURE_KINDS.AUTH],
++  // 📖 402 Payment Required is a PROVIDER-side billing condition: prepaid
++  // balance exhausted, daily cap hit, or a per-key spend cap. Without this
++  // entry it fell through to the `status >= 400` catch-all in classifyStatus
++  // and was classified INVALID_REQUEST, which sets blame:'client' and
++  // healthDamage:false. That made fcm report "400 invalid_request" for a
++  // perfectly valid request, never counted the failure toward the circuit
++  // breaker, and never let autoHeal eject the exhausted models.
++  [402, FAILURE_KINDS.QUOTA],
+   [403, FAILURE_KINDS.AUTH],
+   [408, FAILURE_KINDS.TIMEOUT],
+   [429, FAILURE_KINDS.RATE_LIMIT],
