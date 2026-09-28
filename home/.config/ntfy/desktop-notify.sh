@@ -32,6 +32,7 @@ else
 fi
 
 # Every ntfy popup goes through here, so this is also what makes due-task and
-# pomo alerts audible. Backgrounded: the client should not wait on the sound,
-# and a missing sound device must not break the notification above.
-paplay "$SOUND" >/dev/null 2>&1 &
+# pomo alerts audible. Backgrounded so the client does not wait on the sound,
+# and `timeout` so a player that cannot reach the device cannot pile up — one
+# stuck process per notification is how a burst once left tens of thousands.
+timeout 5 paplay "$SOUND" >/dev/null 2>&1 &
