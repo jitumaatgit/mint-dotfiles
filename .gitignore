@@ -204,3 +204,7 @@ plan.txt
 # and updates itself. Regenerated data, not dotfiles — never version it.
 # Note home/.config/offpunk/offpunkrc points ftr_site_config at this path.
 home/.config/offpunk/ftr-site-config/
+
+# ntfy client.yml holds the subscribed topic names, which are the only thing
+# protecting the alerts on a public server. Credentials, not dotfiles.
+home/.config/ntfy/client.yml
