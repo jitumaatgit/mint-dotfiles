@@ -27,4 +27,3 @@ require("custom.trouble-fetch-fix").setup()
 require("custom.omp-prompt").setup()
 -- Open random note from ~/notes
 require("custom.random-note")
-require("custom.checkmate_notify")
