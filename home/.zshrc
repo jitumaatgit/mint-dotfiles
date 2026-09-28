@@ -123,6 +123,7 @@ alias lg='lazygit'
 # worktree passed explicitly. Run hlgf <path> to scope the history to one area.
 alias hlg='lazygit -w "$HOME" -g "$HOME/.home-git"'
 alias hlgf='lazygit -w "$HOME" -g "$HOME/.home-git" -f'
+alias homp='GIT_DIR="$HOME/.home-git" GIT_WORK_TREE="$HOME" omp'
 alias i='z -i'
 alias zi='z -i'
 alias vim='nvim'
