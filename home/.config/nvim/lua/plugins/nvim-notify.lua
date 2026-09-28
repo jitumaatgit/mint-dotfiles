@@ -14,10 +14,10 @@ return {
     background_colour = "#1e1e2e",
   },
 
-  -- Must run after nvim-notify installs its own `vim.notify`, or the wrap gets
-  -- overwritten. This replaces LazyVim's implicit `require("notify").setup(opts)`.
+  -- Replaces LazyVim's implicit `require("notify").setup(opts)` so the sound
+  -- hook can wrap the module once nvim-notify has configured itself.
   config = function(_, opts)
     require("notify").setup(opts)
-    require("custom.notify-sound").setup()
+    require("custom.notify-sound").setup(require("notify"))
   end,
 }
