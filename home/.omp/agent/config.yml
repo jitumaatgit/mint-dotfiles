@@ -1,21 +1,15 @@
 modelRoles:
-  # --- opencode-go: free tier, shared prompt cache across all six roles ---
   smol: opencode-go/space-bunny-free
   task: opencode-go/space-bunny-free
   commit: opencode-go/space-bunny-free
   tiny: opencode-go/space-bunny-free
   memory: opencode-go/space-bunny-free
-  # 1M ctx / 524K max-out; thinking suffix dropped (reasoning unused)
   slow: opencode-go/space-bunny-free
-
-  # --- fcm: $0, fails over across ~20 providers. 128K ctx / 16K max-out ---
-  # slow stays on opencode-go: 16K max-out truncates thorough analysis.
   plan: fcm-router/fcm
   advisor: fcm-router/fcm
+  judge: opencode-go/space-bunny-free
   default: fcm-router/fcm:off
   vision: fcm-router/fcm
-
-  # --- model-kind: opencode-go serves no non-chat models ---
   web: web/exa
 symbolPreset: unicode
 theme:
@@ -46,83 +40,49 @@ retry:
   modelFallback: true
   fallbackChains:
     web:
-      - web/kagi
-      - web/parallel
-      - web/perplexity
-      - google/gemini-2.5-flash
-      - google-antigravity/gemini-2.5-flash
-      - anthropic/claude-haiku-4-5
-      - openai-codex/gpt-5.6-luna
-      - openai-codex/gpt-5.6
-      - openai-codex/gpt-5.5
-      - xai/grok-4.5
-      - xai-oauth/grok-4.5
-      - web/zai
-      - web/tinyfish
-      - web/jina
-      - web/tavily
-      - web/firecrawl
-      - web/brave
-      - web/kimi
-      - web/synthetic
-      - web/ollama
-      - web/searxng
+      - web/mojeek
+      - web/ecosia
       - web/startpage
       - web/duckduckgo
-      - web/ecosia
-      - web/google
-      - web/mojeek
       - web/public
-    # Bidirectional opencode-go <-> fcm fallback. Each chain is a flat
-    # ordered list for its own role; roles do not recurse into each other.
-
-    # Free-tier opencode-go roles: same-provider free alternates first,
-    # then fcm ($0, ~20-provider failover) as the resilient floor.
     smol:
-      - opencode-go/ox-alpha-free
       - opencode-go/longcat-2.5-preview-free
       - fcm-router/fcm
+      - opencode-go/mimo-v2.5
     task:
-      - opencode-go/ox-alpha-free
       - opencode-go/longcat-2.5-preview-free
       - fcm-router/fcm
+      - opencode-go/mimo-v2.5
     commit:
-      - opencode-go/ox-alpha-free
       - opencode-go/longcat-2.5-preview-free
       - fcm-router/fcm
+      - opencode-go/mimo-v2.5
     tiny:
-      - opencode-go/ox-alpha-free
       - opencode-go/longcat-2.5-preview-free
       - fcm-router/fcm
+      - opencode-go/mimo-v2.5
     memory:
-      - opencode-go/ox-alpha-free
       - opencode-go/longcat-2.5-preview-free
       - fcm-router/fcm
-
-    # slow terminates on a PAID 1M-ctx model, not fcm: 16K max-out on
-    # fcm would silently truncate a thorough-analysis turn.
+      - opencode-go/mimo-v2.5
     slow:
-      - opencode-go/ox-alpha-free
       - fcm-router/fcm
       - opencode-go/deepseek-v4-flash
-
-    # fcm-primary roles fall back to opencode-go.
+      - opencode-go/mimo-v2.5
     plan:
       - opencode-go/space-bunny-free
-      - opencode-go/ox-alpha-free
+      - opencode-go/mimo-v2.5
     advisor:
       - opencode-go/space-bunny-free
-      - opencode-go/ox-alpha-free
+      - opencode-go/mimo-v2.5
     default:
       - opencode-go/space-bunny-free
-      - opencode-go/ox-alpha-free
       - opencode-go/mimo-v2.5
-
-    # vision tolerates fcm's 16K max-out (image answers are short).
     vision:
       - opencode-go/mimo-v2.5
-      - opencode-go/ox-alpha-free
       - fcm-router/fcm
+    judge:
+      - opencode-go/space-bunny-free
   usageAwareFallback: false
   usageReservePct: 25
   usageReservePolicy: confirm
@@ -177,7 +137,6 @@ tools:
     read: allow
     write: allow
     edit: allow
-    find: allow
     eval: allow
     computer: allow
     grep: allow
@@ -238,17 +197,20 @@ bashInterceptor:
   enabled: false
 task:
   batch: true
-  maxConcurrency: 4
-  maxRecursionDepth: 1
-  maxRuntimeMs: 300000
-  maxEffort: medium
+  maxConcurrency: 32
+  maxRecursionDepth: 2
+  maxRuntimeMs: 0
+  maxEffort: max
   isolation:
     commits: generic
   eager: default
   enableEffort: true
-  prewalk: true
+  prewalk: false
   disabledAgents:
     []
+  softRequestBudget: 200
+  enableLsp: false
+  showResolvedModelBadge: true
 goal:
   enabled: true
 includeModelInPrompt: true
@@ -284,7 +246,7 @@ provider:
 secrets:
   enabled: true
 ask:
-  timeout: 120
+  timeout: 0
 update:
   channel: canary
 async:
@@ -300,7 +262,7 @@ proseOnlyThinking: true
 model:
   loopGuard:
     enabled: true
-    checkAssistantContent: false
+    checkAssistantContent: true
     toolCallReminder: false
   toolCallLoopGuard:
     enabled: true
@@ -310,9 +272,9 @@ snapcompact:
   toolResults: false
 ttsr:
   builtinRules: true
-  judge: auto
+  judge: "on"
   interruptMode: always
-  enabled: false
+  enabled: true
 grep:
   enabled: true
   contextAfter: 3
@@ -330,3 +292,7 @@ cycleOrder:
   - default
 power:
   sleepPrevention: system
+isolation:
+  backend: auto
+astEdit:
+  enabled: false
