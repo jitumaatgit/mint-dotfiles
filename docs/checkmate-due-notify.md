@@ -116,7 +116,7 @@ Two separate paths, both needed:
 
 | Where | What | Configured in |
 |---|---|---|
-| In-editor popups | any `vim.notify`, so pomo, checkmate and LSP messages | `lua/custom/notify-sound.lua` |
+| In-editor popups | any `vim.notify`, so LSP messages and plugin notices | `lua/custom/notify-sound.lua` |
 | ntfy popups | every message on any subscribed topic | `~/.config/ntfy/desktop-notify.sh` |
 
 The in-editor hook wraps `vim.notify` from nvim-notify's `config`, so it must
@@ -124,8 +124,28 @@ be installed after nvim-notify's own `setup()` or it gets overwritten. Set
 `vim.g.notify_sound_disabled = true` to mute. `DEBUG`-level notifications are
 silent.
 
-Because nvim-notify is loaded by lazy.nvim, notifications raised in the first
-few milliseconds of startup can fire before the hook is installed.
+Note that pomo's default notifier calls the `notify` module directly and so
+bypasses that wrap entirely — its in-editor popup never sounds. Pomo timers
+are audible anyway because the same completion publishes to ntfy, and the
+client plays the alert locally regardless of which window has focus.
 
-Both sounds default to `dialog-information.oga` in
-`/usr/share/sounds/freedesktop/stereo/`; the ntfy one honours `NTFY_SOUND`.
+### Choosing a sound
+
+`desktop-notify.sh` picks its sound from the tags the publisher set. ntfy-client
+exports each message's fields as environment variables to the subscribed
+command, so `NTFY_TAGS` is available for free and publishers need no local
+config to match:
+
+| Tag | Sound | Sent by |
+|---|---|---|
+| `alarm_clock` | `alarm-clock-elapsed.oga` | pomo timer completions |
+| `warning` | `bell.oga` | checkmate overdue tasks |
+| anything else | `dialog-information.oga` | everything else |
+
+The first match wins, so `alarm_clock` is checked before `warning`. The checkmate
+sound follows the `tags` list in `config.json`; drop `warning` from there and it
+falls back to the generic blip. `NTFY_SOUND` overrides the choice entirely.
+
+Files come from `/usr/share/sounds/freedesktop/stereo/`. The sound is played
+after the popup is queued and in the background, so a missing sound device can
+neither delay nor suppress the notification.
