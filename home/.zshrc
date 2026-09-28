@@ -126,7 +126,9 @@ alias preview='bat --style=plain --paging=always'
 alias wm='workmux'
 alias dotsync='cd ~/mint-dotfiles && ./sync-from-home.sh && git diff'
 alias rg='rg --hidden -S --color=always'
+alias r='fc -s'
 if [[ -o interactive ]]; then
+  alias grep='rg --hidden -S --color=always'
   alias ls='eza --color=always --icons --group-directories-first -a'
   alias cat='bat --paging=never'
 fi
