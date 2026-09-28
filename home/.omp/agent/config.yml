@@ -296,3 +296,4 @@ isolation:
   backend: auto
 astEdit:
   enabled: false
+hideThinkingBlock: false
