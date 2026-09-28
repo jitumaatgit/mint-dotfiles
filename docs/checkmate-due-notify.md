@@ -116,18 +116,24 @@ Two separate paths, both needed:
 
 | Where | What | Configured in |
 |---|---|---|
-| In-editor popups | any `vim.notify`, so LSP messages and plugin notices | `lua/custom/notify-sound.lua` |
+| In-editor popups | every notification nvim-notify displays, whoever raises it | `lua/custom/notify-sound.lua` |
 | ntfy popups | every message on any subscribed topic | `~/.config/ntfy/desktop-notify.sh` |
 
-The in-editor hook wraps `vim.notify` from nvim-notify's `config`, so it must
-be installed after nvim-notify's own `setup()` or it gets overwritten. Set
-`vim.g.notify_sound_disabled = true` to mute. `DEBUG`-level notifications are
-silent.
+The in-editor hook wraps the **nvim-notify module's** `notify` function, not
+`vim.notify`. Do not "simplify" it to wrap `vim.notify`: LazyVim replaces
+`vim.notify` with a buffer that collects notifications until the real notifier
+is installed and then replays them, and a wrapper installed at that moment
+captures the buffer. Every replayed notification then re-enters it, so the
+replay never terminates — that produced tens of thousands of stuck sound
+players and took the machine down. The module field is untouched by the swap,
+so there is no ordering to get right.
 
-Note that pomo's default notifier calls the `notify` module directly and so
-bypasses that wrap entirely — its in-editor popup never sounds. Pomo timers
-are audible anyway because the same completion publishes to ntfy, and the
-client plays the alert locally regardless of which window has focus.
+Wrapping the module also means pomo, which calls `require("notify").notify()`
+directly and so never went through `vim.notify`, now sounds as well.
+
+Set `vim.g.notify_sound_disabled = true` to mute. `DEBUG`-level notifications
+are silent. Players are spawned under `timeout 5` and at most one per 200 ms,
+so neither a blocked audio device nor a burst of alerts can pile up processes.
 
 ### Stacking
 
