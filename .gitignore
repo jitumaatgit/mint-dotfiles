@@ -199,3 +199,8 @@ plan.txt
 # Fetch it from virtualbox.org if a VM needs it.
 /Oracle_VirtualBox_Extension_Pack-*.vbox-extpack
 /ExtPack-license.txt
+
+# Offpunk ftr_site_config: a 2044-file upstream checkout that offpunk clones
+# and updates itself. Regenerated data, not dotfiles — never version it.
+# Note home/.config/offpunk/offpunkrc points ftr_site_config at this path.
+home/.config/offpunk/ftr-site-config/
