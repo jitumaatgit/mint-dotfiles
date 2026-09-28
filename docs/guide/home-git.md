@@ -41,7 +41,7 @@ Paths are always relative to `$HOME`, whatever the current directory.
 
 ## What is tracked
 
-Roughly 530 files, ~38MB of object store. Tracked: dotfiles, `.config` (minus
+Roughly 520 files, ~38MB of object store. Tracked: dotfiles, `.config` (minus
 browsers), `.agents/skills`, omp config/skills/extensions, `.local/bin` scripts,
 `.ssh`, `.npmrc`, fcm-router config and token files, `Downloads` (minus large
 binaries), `Documents`.
@@ -55,7 +55,8 @@ Deliberately excluded (see the ignore file for the full list):
   `.cache`, `.local/share`, `.local/opt`, `.opencode/bin`, `.omp/{cache,natives,wt,logs}`,
   `.omp/plugins/node_modules`, `.omp/agent/{sessions,memories,blobs,*.db}`.
 - **Vendored tool binaries in `.local/bin`** — terraform, ntfy, uv, yazi, lazygit, yq, starship.
-- **Logs and shell history** — `*.log`, `.zsh_history`, `.zcompdump*`, fcm telemetry.
+- **Logs and scratch** — `*.log`, `.xsession-errors`, `.wget-hsts`, `.Xauthority`,
+  `.steampid`, `.z`, `.z.lock`, `.zsh_history`, `.zcompdump*`, fcm telemetry.
 - **Secrets are NOT excluded** — this is deliberate and local-only. `.ssh/`,
   `.npmrc`, `.dmrc`, fcm tokens and `*.env` are tracked so they can be restored.
 
@@ -69,6 +70,41 @@ Deliberately excluded (see the ignore file for the full list):
    repo cannot become a submodule.
 
 Both print to stderr and suggest adding an ignore rule.
+
+## Maintenance
+
+**Nothing recurring.** There is no timer, no daemon and no service. `hsnap` is the
+whole workflow, and it is a no-op when the tree is clean. A 2-minute idle sample
+left the tree at 0 changes, so both guards stay quiet until something actually
+moves.
+
+Git's own housekeeping (`gc`, packing loose objects) runs automatically under
+git's default `gc.auto`. Snapshots are cheap: git stores only changed blobs, so
+re-snapshotting an unchanged tree costs almost nothing.
+
+### Occasional, all reactive
+
+| Situation | What to do |
+|---|---|
+| A snapshot warns about a >10MB file | Add the path to `~/.config/home-git/ignore`, then `hgit rm --cached -- <path>`. The rule alone will not untrack a file that is already tracked. |
+| The hook refuses an embedded repo | Add that directory to the ignore file. It keeps its own history. |
+| A nested repo appears somewhere new | Same, before the hook complains on the next snapshot. |
+| Disk pressure | `hgit gc --aggressive` reclaims packs. `/` was at 89% with 27G free. |
+| History wanted off this machine | `git --git-dir=/home/mint/.home-git bundle create backup.bundle --all` — the repo has no remote by design. |
+
+### Deliberate permanent noise
+
+`.free-coding-models.json` and `.free-coding-models.backups/` change on their own
+because the fcm daemon rewrites them. A snapshot taken after the daemon has
+touched them will include them. Expected, not a fault.
+
+### What home-git does not cover
+
+Nothing inside `mint-dotfiles`, `notes`, `projects`, `pso`, `other-dotfiles` or
+`nixarch-dotfiles` — those are separate repositories with their own remotes and
+history, and they snapshot with their own tooling. Ignored directories are not
+versioned either, so a restore cannot recover a deleted `~/.cache` or `~/.steam`
+file.
 
 ## Caveats
 
@@ -87,7 +123,7 @@ Both print to stderr and suggest adding an ignore rule.
 
 ```sh
 hgit log --oneline | head                     # history
-hgit ls-files | wc -l                         # 530 ish
+hgit ls-files | wc -l                         # ~520
 hgit ls-files -s | awk '$1=="160000"' | wc -l # must print 0
 hsnap                                         # clean tree -> "nothing to snapshot"
 hgit status --porcelain | wc -l               # 0 when clean
@@ -98,5 +134,5 @@ hgit status --porcelain | wc -l               # 0 when clean
 - All API keys in this repo should be rotated: the user accepted tracking them
   deliberately, on the basis that they are free-tier keys (except opencode-go)
   and would be rotated once the setup was done.
-- Re-running `hsnap` after the fcm daemon rotates its config will always show
-  `.free-coding-models.json` and a few `.free-coding-models.backups/` files.
+- `.config/gh/hosts.yml` and `.android/adbkey` are tracked but were not part of
+  the original decision. Exclude them if that was not intended.
