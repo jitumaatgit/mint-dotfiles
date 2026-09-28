@@ -118,6 +118,11 @@ source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 alias batstat='upower -i $(upower -e | grep BAT) | grep -B 1 percentage'
 alias lg='lazygit'
+
+# home-git tracks all of $HOME, so lazygit needs the bare gitdir and the
+# worktree passed explicitly. Run hlgf <path> to scope the history to one area.
+alias hlg='lazygit -w "$HOME" -g "$HOME/.home-git"'
+alias hlgf='lazygit -w "$HOME" -g "$HOME/.home-git" -f'
 alias i='z -i'
 alias zi='z -i'
 alias vim='nvim'
