@@ -97,3 +97,35 @@ JSON body POSTed to `/<topic>` is stored verbatim as the message text — the
 `title`, `priority` and `tags` fields are silently ignored. This script posts
 the message as the body to the topic URL with `Title`, `Priority` and `Tags`
 headers, which works against any ntfy deployment.
+
+## Other senders
+
+The topic is shared, so anything can push to it as long as it can read the
+config file. `pomo.nvim` already does: `lua/plugins/pomo.lua` registers a
+custom notifier through pomo's `{ init = factory }` hook, so a finished work
+or break timer reaches the phone even while Neovim sits in the background.
+It sends the timer name, its duration and the repetition count.
+
+Note that pomo's `timers.<Name>` list *replaces* `notifiers` wholesale rather
+than extending it, so a per-timer override has to repeat the ntfy entry or
+that timer stays local.
+
+## Notification sounds
+
+Two separate paths, both needed:
+
+| Where | What | Configured in |
+|---|---|---|
+| In-editor popups | any `vim.notify`, so pomo, checkmate and LSP messages | `lua/custom/notify-sound.lua` |
+| ntfy popups | every message on any subscribed topic | `~/.config/ntfy/desktop-notify.sh` |
+
+The in-editor hook wraps `vim.notify` from nvim-notify's `config`, so it must
+be installed after nvim-notify's own `setup()` or it gets overwritten. Set
+`vim.g.notify_sound_disabled = true` to mute. `DEBUG`-level notifications are
+silent.
+
+Because nvim-notify is loaded by lazy.nvim, notifications raised in the first
+few milliseconds of startup can fire before the hook is installed.
+
+Both sounds default to `dialog-information.oga` in
+`/usr/share/sounds/freedesktop/stereo/`; the ntfy one honours `NTFY_SOUND`.
