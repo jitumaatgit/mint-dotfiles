@@ -4,3 +4,5 @@ set timeout 30
 set history_size 500
 set archives_size 500
 handler application/pdf zathura %s
+set ftr_site_config /home/mint/mint-dotfiles/home/.config/offpunk/ftr-site-config
+
