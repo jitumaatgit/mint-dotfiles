@@ -1,0 +1,13 @@
+[Unit]
+Description=Push overdue @due task alerts from the notes vault to ntfy
+Documentation=file:///home/mint/mint-dotfiles/docs/checkmate-due-notify.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/checkmate-due-notify
+# The scan walks the whole vault; keep it off the critical path.
+Nice=10
+IOSchedulingClass=idle
+TimeoutStartSec=120

@@ -1,0 +1,306 @@
+#!/usr/bin/env python3
+"""checkmate-due-notify - push @due task alerts from an Obsidian vault to ntfy.
+
+Scans markdown files for unchecked tasks carrying an @due(YYYY-MM-DD[ HH:MM])
+tag and publishes one ntfy notification per newly-overdue task.
+
+Replaces the in-editor custom.checkmate_notify.nvim module, which could only
+see tasks in buffers nvim happened to have open.
+
+Only lines that are actually tasks are considered, so `@due(...)` mentioned in
+prose (archived prompts, spec docs) is ignored.
+
+Config:  ~/.config/checkmate-due-notify/config.json  (created on first run)
+State:   ~/.local/state/checkmate-due-notify/state.json (which tasks were sent)
+"""
+
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import hashlib
+import json
+import os
+import re
+import secrets
+import sys
+import urllib.error
+import urllib.request
+from pathlib import Path
+
+CONFIG_PATH = Path.home() / ".config/checkmate-due-notify/config.json"
+STATE_PATH = Path.home() / ".local/state/checkmate-due-notify/state.json"
+
+# A task line: optional indent, bullet, checkbox, then the text.
+# The checkbox is mandatory - prose mentioning @due() is not a task.
+TASK_RE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+\[(.)\]\s+(.*)$")
+DUE_RE = re.compile(r"@due\(([^)]*)\)")
+
+# Task text is prose followed by metadata. Cut at the first tag or wiki link
+# rather than deleting tokens, which leaves dangling connectives ("...and").
+NOISE_RE = re.compile(r"(@\w+\(|\[\[|`|^#+\s*)")
+TRAILING_CONJUNCT = re.compile(r"\s+(and|with|via|for|from|of|to|in|on|at)$", re.I)
+
+# Skipped wholesale: .git, obsidian config, and non-markdown payload.
+SKIP_DIRS = {".git", ".obsidian", ".trash", "node_modules", "__pycache__"}
+
+DUE_FORMATS = ("%Y-%m-%d %H:%M", "%Y-%m-%d")
+
+
+class Config:
+    def __init__(self, path: Path, overrides: dict):
+        self.path = path
+        data = {}
+        if path.exists():
+            try:
+                data = json.loads(path.read_text())
+            except json.JSONDecodeError as exc:
+                die(f"{path} is not valid JSON: {exc}")
+        data.update({k: v for k, v in overrides.items() if v is not None})
+
+        self.vault = Path(data.get("vault") or Path.home() / "notes").expanduser()
+        self.server = (data.get("server") or "https://ntfy.sh").rstrip("/")
+        self.topic = data.get("topic")
+        self.priority = data.get("priority") or "high"
+        self.tags = data.get("tags") or ["warning", "clock"]
+        self.token = data.get("token") or os.environ.get("NTFY_TOKEN")
+        self.ignore_globs = data.get("ignore_globs") or []
+        self._persisted = data
+
+    def ensure_topic(self) -> bool:
+        """Create the config with a random, unguessable topic if absent."""
+        if self.topic:
+            return False
+        self.topic = "due-" + secrets.token_hex(8)
+        self._persisted.update(
+            {
+                "vault": str(self.vault),
+                "server": self.server,
+                "topic": self.topic,
+                "priority": self.priority,
+                "tags": self.tags,
+            }
+        )
+        if self.token:
+            self._persisted["token"] = self.token
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self._persisted, indent=2) + "\n")
+        self.path.chmod(0o600)
+        return True
+
+    def save(self) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(json.dumps(self._persisted, indent=2) + "\n")
+        self.path.chmod(0o600)
+
+
+def die(msg: str, code: int = 1):
+    print(f"checkmate-due-notify: {msg}", file=sys.stderr)
+    sys.exit(code)
+
+
+
+def humanize_delta(delta: dt.timedelta) -> str:
+    """Render an overdue duration without sub-second noise."""
+    seconds = int(delta.total_seconds())
+    days, rem = divmod(seconds, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes = rem // 60
+    if days:
+        return f"{days}d" if days >= 2 else f"{days}d {hours}h"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m"
+
+
+def prune_state(state: dict, now: dt.datetime, max_age_days: int = 365) -> dict:
+    """Drop ids recorded long ago so the state file stays bounded.
+
+    A task still open past this age is intentionally re-alerted.
+    """
+    cutoff = now - dt.timedelta(days=max_age_days)
+    kept = {}
+    for task_id, seen in state.items():
+        try:
+            stamp = dt.datetime.fromisoformat(seen)
+        except (TypeError, ValueError):
+            continue
+        if stamp >= cutoff:
+            kept[task_id] = seen
+    return kept
+
+
+def parse_due(raw: str):
+    """Return a datetime for a due value, or None if unparseable.
+
+    Never raises: a single malformed tag must not abort the scan.
+    """
+    raw = raw.strip()
+    for fmt in DUE_FORMATS:
+        try:
+            return dt.datetime.strptime(raw, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def describe(text: str) -> str:
+    """Reduce a raw task line to a readable one-line description."""
+    cleaned = NOISE_RE.split(text, 1)[0]
+    cleaned = TRAILING_CONJUNCT.sub("", re.sub(r"\s+", " ", cleaned).strip())
+    return cleaned.strip(" -:") or text.strip()
+
+
+def iter_markdown(vault: Path, ignore_globs: list[str]):
+    for dirpath, dirnames, filenames in os.walk(vault):
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        for name in sorted(filenames):
+            if not name.endswith(".md"):
+                continue
+            path = Path(dirpath) / name
+            rel = str(path.relative_to(vault))
+            if any(rel.startswith(g) or f"/{g}" in f"/{rel}" for g in ignore_globs):
+                continue
+            yield path, rel
+
+
+def scan(vault: Path, ignore_globs: list[str], now: dt.datetime, warn: list[str]):
+    """Yield (task_id, relpath, lineno, due, description) for overdue open tasks."""
+    for path, rel in iter_markdown(vault, ignore_globs):
+        try:
+            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+        except OSError as exc:
+            warn.append(f"{rel}: {exc}")
+            continue
+        for lineno, line in enumerate(lines, 1):
+            m = TASK_RE.match(line)
+            if not m:
+                continue
+            state, text = m.group(1), m.group(2)
+            # Only unchecked tasks alert. ' ' is open; x/X done; - cancelled.
+            if state != " ":
+                continue
+            due_m = DUE_RE.search(text)
+            if not due_m:
+                continue
+            due = parse_due(due_m.group(1))
+            if due is None:
+                warn.append(f"{rel}:{lineno}: unparseable @due({due_m.group(1)}) - skipped")
+                continue
+            if due > now:
+                continue
+            desc = describe(text)
+            # Stable across line moves: path + due + description, not line number.
+            task_id = hashlib.sha1(
+                f"{rel}\x00{due.isoformat()}\x00{desc}".encode()
+            ).hexdigest()[:16]
+            yield task_id, rel, lineno, due, desc
+
+
+def load_state() -> dict:
+    if not STATE_PATH.exists():
+        return {}
+    try:
+        return json.loads(STATE_PATH.read_text())
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_state(state: dict) -> None:
+    STATE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    STATE_PATH.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+
+
+def publish(cfg: Config, title: str, message: str, priority: str, tags: list[str]) -> None:
+    """POST to the topic URL with metadata in headers.
+
+    ntfy only parses a JSON request body when it is sent to the *root* URL;
+    a JSON body posted to /<topic> is stored verbatim as the message text.
+    Headers work against any ntfy deployment, so use those.
+    """
+    req = urllib.request.Request(
+        f"{cfg.server}/{cfg.topic}",
+        data=message.encode("utf-8"),
+        headers={
+            "Title": title,
+            "Priority": priority,
+            "Tags": ",".join(tags),
+            "Content-Type": "text/plain; charset=utf-8",
+        },
+        method="POST",
+    )
+    if cfg.token:
+        req.add_header("Authorization", f"Bearer {cfg.token}")
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            body = json.loads(resp.read() or b"{}")
+    except urllib.error.HTTPError as exc:
+        die(f"ntfy rejected the message: HTTP {exc.code} {exc.reason}")
+    except urllib.error.URLError as exc:
+        die(f"could not reach {cfg.server}: {exc.reason}")
+    except json.JSONDecodeError:
+        die(f"ntfy returned a non-JSON response from {cfg.server}")
+    if body.get("code") and body["code"] >= 400:
+        die(f"ntfy error {body.get('code')}: {body.get('error')}")
+    print(f"  -> published id={body.get('id')} topic={cfg.topic}")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--vault", help="vault root to scan (default: config or ~/notes)")
+    ap.add_argument("--topic", help="ntfy topic to publish to")
+    ap.add_argument("--server", help="ntfy base URL (default: https://ntfy.sh)")
+    ap.add_argument("--dry-run", action="store_true", help="list what would be sent, send nothing")
+    ap.add_argument("--repost", action="store_true", help="ignore dedup state and send everything again")
+    ap.add_argument("--show-topic", action="store_true", help="print the configured topic and exit")
+    args = ap.parse_args()
+
+    cfg = Config(CONFIG_PATH, {"vault": args.vault, "topic": args.topic, "server": args.server})
+    if cfg.ensure_topic():
+        print(f"wrote {CONFIG_PATH} with new topic {cfg.topic}")
+        print(f"subscribe with: ntfy subscribe {cfg.server}/{cfg.topic}")
+
+    if args.show_topic:
+        print(f"{cfg.server}/{cfg.topic}")
+        return 0
+
+    if not cfg.vault.is_dir():
+        die(f"vault not found: {cfg.vault}")
+
+    now = dt.datetime.now()
+    warn: list[str] = []
+    found = list(scan(cfg.vault, cfg.ignore_globs, now, warn))
+
+    for w in warn:
+        print(f"warning: {w}", file=sys.stderr)
+
+    if not found:
+        print("no overdue open tasks")
+        return 0
+
+    state = prune_state({} if args.repost else load_state(), now)
+    fresh = [t for t in found if t[0] not in state]
+    stamp = now.isoformat(timespec="seconds")
+
+    if not fresh:
+        print(f"{len(found)} overdue task(s), all already notified")
+        return 0
+
+    print(f"{len(fresh)} overdue task(s) of {len(found)} found")
+    for task_id, rel, lineno, due, desc in fresh:
+        message = (
+            f"{desc}\n{rel}:{lineno}\n"
+            f"due {due:%Y-%m-%d %H:%M} ({humanize_delta(now - due)} overdue)"
+        )
+        if args.dry_run:
+            continue
+        publish(cfg, f"Task overdue: {due:%Y-%m-%d}", message, cfg.priority, cfg.tags)
+        # Persist after each send: a crash mid-run must not re-alert the
+        # tasks that already went out.
+        state[task_id] = stamp
+        save_state(state)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

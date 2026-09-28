@@ -1,0 +1,15 @@
+[Unit]
+Description=Check the notes vault for overdue @due tasks every 15 minutes
+Documentation=file:///home/mint/mint-dotfiles/docs/checkmate-due-notify.md
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=15min
+# Spread the wakeup; a due task does not need second-level precision.
+RandomizedDelaySec=90s
+# Catch up after the machine was asleep or powered off.
+Persistent=true
+Unit=checkmate-due-notify.service
+
+[Install]
+WantedBy=timers.target
