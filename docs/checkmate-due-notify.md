@@ -129,6 +129,23 @@ bypasses that wrap entirely — its in-editor popup never sounds. Pomo timers
 are audible anyway because the same completion publishes to ntfy, and the
 client plays the alert locally regardless of which window has focus.
 
+### Stacking
+
+nvim-notify opens one floating window per message, so distinct notifications
+already stack — the installed version has no queue option at all. Two separate
+things were collapsing them into fewer windows:
+
+- `merge_duplicates` (default `true`) folds repeated *identical* messages into
+  a single popup, which hides the fact that they repeated. Set to `false`, so
+  three identical notifications produce three popups.
+- pomo's default notifier passes `replace = self.notification`, so a running
+  timer updates one popup in place rather than adding one per tick. That is
+  deliberate: its notifier fires every second, so stacking would flood.
+
+Popups also disappear after `timeout` (5000 ms) unless raised sticky, so a
+burst is only on screen for that long. On a short terminal a stack can run out
+of rows, in which case further notifications wait for a slot.
+
 ### Choosing a sound
 
 `desktop-notify.sh` picks its sound from the tags the publisher set. ntfy-client
