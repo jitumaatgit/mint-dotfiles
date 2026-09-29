@@ -135,6 +135,63 @@ table.insert(config.hyperlink_rules, {
 	format = "https://github.com/$1/$3",
 })
 
+-- Extra quick-select patterns (CTRL+SHIFT+Space). These go in the GLOBAL
+-- config on purpose, not in QuickSelectArgs on the key binding: QuickSelectArgs
+-- .patterns REPLACES wezterm's built-in set (URLs, path fragments, git hashes,
+-- IPs, numbers) instead of adding to it, which would narrow what matches rather
+-- than expand it. The key binding below therefore sets scope_lines only.
+--
+-- wezterm compiles this whole list into ONE alternation regex and scans left to
+-- right, so the first alternative that matches at a position wins regardless of
+-- which pattern "ought" to be longer. Order below is most specific -> least.
+-- Concretely: without the ordering, a stack frame is chopped into a path plus a
+-- stray ":42", and an ISO timestamp is eaten by file:line and comes back
+-- truncated to "2026-09-29T13:04".
+--
+-- These use [=[ ]=] long strings so the backslashes below are literal. Inside a
+-- normal "..." string every \ would need doubling, which is unreadable.
+--
+-- The separator class in the stack-frame pattern is [/\.] and nothing more.
+-- Adding a literal "]" means spelling it "[/\.\]]", and getting that bracket
+-- count wrong yields "[/\.\]" -- one bracket, so "\]" reads as an escaped
+-- literal, the class swallows the next [...] as a set union, and the separator
+-- requirement silently vanishes (a bare "3:4" then matches as a stack frame).
+-- The regex still compiles, so only matching real output catches this. A "]" in
+-- a path is not worth that footgun.
+config.quick_select_patterns = {
+	-- UUID, ahead of the dotted and hex-ish patterns below.
+	[==[\b[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\b]==],
+	-- ISO-8601 / RFC3339, plus a bare YYYY-MM-DD.
+	[==[(?<![\w])\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?(?![\w])]==],
+	-- host:port before bare IPv4: with a port is the more useful unit, and you
+	-- cannot get both, because one match consumes the text.
+	[==[(?<![\w.])(?:[\w-]+\.)+[\w-]+:\d{2,5}(?![\w])]==],
+	[==[(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])]==],
+	-- Stack frame: path + :line[:col]. Precedes the plain path pattern below.
+	[==[(?<![\w])[\w@.+-]+[/\.][\w@.+/-]*:\d+(?::\d+)?(?![\w])]==],
+	-- File paths: anything containing a slash.
+	[==[(?<![\w/])(?:~|\.{1,2})?/?(?:[\w@.+-]+/)+[\w@.+-]*[\w+-]]==],
+	-- Bare filename with an extension. >=2 char extension so "e.g" is not one.
+	[==[(?<![\w/.\-])[\w-]+\.[A-Za-z][\w+-]{1,9}\b]==],
+	-- KEY=value. Uppercase-only on purpose: that is what separates EDITOR=nvim
+	-- from a password=hunter2 sitting in your shell history.
+	[==[(?<![\w$])[A-Z_][A-Z0-9_]*=[^\s'"]+]==],
+	-- Error codes.
+	[==[(?<![\w])E\d{3,5}(?![\w])]==],
+	[==[(?<![\w])ERR_[A-Z0-9_]+(?![\w])]==],
+	[==[(?<![\w])error\[[A-Za-z]\d+\]]==],
+	[==[(?<![\w])error TS\d+]==],
+	[==[(?<![\w])(?:panic|FATAL|fatal|FAILED)\b]==],
+	-- Quoted strings and backticked commands.
+	[==["(?:[^"\\\n]|\\.)*"]==],
+	[==['(?:[^'\\\n]|\\.)*']==],
+	[==[`[^`\n]*`]==],
+	-- Command invocation containing at least one flag. The trailing-argument
+	-- class excludes quotes so `git commit -m 'fix: thing'` is not swallowed up
+	-- to "git commit -m 'fix:" -- the quoted pattern takes the remainder.
+	[==[(?<![\w/])[\w.-]+(?: +[\w./-]+)*(?: +-{1,2}[\w-]+)+(?: +[^\s'"]+)*]==],
+}
+
 
 -- show which key table is active in the status area
 ---@diagnostic disable-next-line: unused-local
@@ -373,6 +430,14 @@ config.keys = {
 	-- Copy mode
 	{ key = "[", mods = "LEADER", action = act.ActivateCopyMode },
 	{ key = "]", mods = "LEADER", action = act.CopyTo("ClipboardAndPrimarySelection") },
+	-- Quick select. This is wezterm's default binding (plain QuickSelect, 1000
+	-- lines of scope), now scoped wider and drawing on the extra patterns in
+	-- config.quick_select_patterns above. Deliberately no `patterns` key here:
+	-- that field replaces wezterm's built-ins rather than adding to them.
+	--
+	-- Typing a match's lowercase label copies it; the UPPERCASE label copies AND
+	-- pastes. That is stock QuickSelect behaviour, not something set here.
+	{ key = "Space", mods = "CTRL|SHIFT", action = act.QuickSelectArgs({ scope_lines = 5000 }) },
 	-- Zoom
 	{ key = "f", mods = "LEADER", action = act.TogglePaneZoomState },
 	-- edit tab name

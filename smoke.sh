@@ -21,4 +21,13 @@ if ! lua5.1 "$REPO_ROOT/home/.config/wezterm/utils_test.lua"; then
   exit 1
 fi
 
+# The quick-select patterns are Lua long strings, and a pattern ending in "]"
+# needs a doubled bracket or Lua silently swallows the entries after it. That
+# corruption passes `luac -p`, so this test loads the real config instead.
+echo "🧪 Running wezterm quick-select pattern test"
+if ! python3 "$REPO_ROOT/home/.config/wezterm/quick_select_test.py"; then
+  echo "🚫 quick-select pattern test failed"
+  exit 1
+fi
+
 echo "✅ Smoke test passed"
