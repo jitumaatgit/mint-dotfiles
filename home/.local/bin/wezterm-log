@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# Inspect and archive wezterm logs.
+#
+# WHY THIS EXISTS
+#   wezterm has no `--log-file` flag and no `log_level` config option. It always
+#   writes to
+#       $XDG_RUNTIME_DIR/wezterm/wezterm-gui-log-<pid>.txt
+#   which is tmpfs (~/run/user/$UID) and is therefore destroyed on every reboot.
+#   On top of that wezterm calls prune_old_logs() during GUI startup, so it
+#   deletes its own older logs unprompted. There is no way to make the log
+#   persistent from the config file; the only tunable is the WEZTERM_LOG
+#   environment variable, which sets verbosity, not the destination.
+#
+#   Consequence: if you did not save a log before quitting wezterm, it is gone.
+#   `wezterm-log save` is how you keep one.
+#
+# USAGE
+#   wezterm-log            show the current GUI's log (same as `show`)
+#   wezterm-log show       same
+#   wezterm-log list       every runtime log wezterm currently has on disk
+#   wezterm-log tail       follow the current GUI's log
+#   wezterm-log save       copy the current log into a persistent archive
+#   wezterm-log errors     just the WARN/ERROR lines from the current log
+set -euo pipefail
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/wezterm"
+archive="${WEZTERM_LOG_ARCHIVE:-$HOME/.local/state/wezterm/archive}"
+
+die() { printf 'wezterm-log: %s\n' "$1" >&2; exit 1; }
+
+# Newest log by mtime; empty output if wezterm has never run this boot.
+current_log() { ls -t "$runtime_dir"/wezterm-gui-log-*.txt 2>/dev/null | head -n1; }
+
+need_log() {
+	local f; f="$(current_log)"
+	[ -n "$f" ] || die "no wezterm log in $runtime_dir (has wezterm run this boot?)"
+	printf '%s\n' "$f"
+}
+
+case "${1:-show}" in
+show)
+	log="$(need_log)"
+	printf '# %s\n' "$log" >&2
+	cat -- "$log"
+	;;
+list)
+	[ -d "$runtime_dir" ] || die "$runtime_dir does not exist"
+	ls -lt --time-style=long-iso "$runtime_dir"/wezterm-gui-log-*.txt
+	;;
+tail)
+	log="$(need_log)"
+	printf '# following %s (ctrl-c to stop)\n' "$log" >&2
+	tail -f -- "$log"
+	;;
+errors)
+	log="$(need_log)"
+	grep -E 'WARN|ERROR' -- "$log" || printf '(no WARN or ERROR lines)\n'
+	;;
+save)
+	log="$(need_log)"
+	mkdir -p -- "$archive"
+	# Name by PID and start time rather than mtime: mtime is whenever the last
+	# line was written, which for a crash is not when the log began.
+	dest="$archive/wezterm-gui-log-$(basename "$log" .txt | sed 's/.*-//')-$(date +%Y%m%dT%H%M%S).txt"
+	cp -- "$log" "$dest"
+	printf 'saved %s -> %s\n' "$log" "$dest"
+	;;
+*)
+	printf 'usage: %s [show|list|tail|errors|save]\n' "${0##*/}" >&2
+	exit 2
+	;;
+esac

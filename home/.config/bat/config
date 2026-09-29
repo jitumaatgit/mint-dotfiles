@@ -1,0 +1,69 @@
+# bat configuration. Each non-comment line is one command-line option that bat
+# applies as if it had been typed, so CLI flags still override anything set here.
+#
+# Resolved paths for this build:
+#   config file : $HOME/.config/bat/config
+#   themes      : $HOME/.config/bat/themes/*.tmTheme
+#   cache       : $HOME/.cache/bat
+#
+# Note that bat IGNORES XDG_CONFIG_HOME here: it hardcodes $HOME/.config/bat and
+# will silently read nothing if you set XDG_CONFIG_HOME and expect it to move.
+# That is verified behaviour on 0.26.1, not a guess.
+
+
+# --- Theme ------------------------------------------------------------------
+# bat names a custom theme after its FILENAME, not after the `name` key inside
+# the plist. So themes/Catppuccin-Mocha.tmTheme is selected as
+# `--theme=Catppuccin-Mocha` (hyphen). Passing "Catppuccin Mocha" with a space
+# silently resolves to the BUILT-IN theme of that name that 0.26.1 ships, which
+# looks identical and is why the mistake goes unnoticed.
+#
+# Custom themes must be recompiled into the asset cache after any edit:
+#   bat cache --build
+--theme="Catppuccin-Mocha"
+
+
+# --- Decorations ------------------------------------------------------------
+# numbers  line-number gutter
+# changes  git modification markers (verified working on 0.26.1)
+# header   filename banner above the content
+# grid     vertical/horizontal rules separating gutter from content
+#
+# These are suppressed automatically when output is piped, because
+# --decorations defaults to `auto`. That is deliberate and load-bearing: it is
+# what makes `bat file | rg foo` clean while `bat file` in the terminal is
+# decorated. Do not set --decorations=always here.
+#
+# The `cat` alias in ~/.zshrc overrides --style to `plain` so that cat stays
+# cat-compatible for scripts and copy-paste; it is unaffected by this line.
+--style=numbers,changes,header,grid
+
+
+# --- Paging -----------------------------------------------------------------
+# `auto` pages into less only when stdout is a TTY and the content exceeds one
+# screen. Piped and agent-spawned output therefore never pages.
+--paging=auto
+#
+# Passing ANY arguments to --pager makes bat stop injecting its own less flags,
+# per the README: with --pager="less -R" it will NOT add -R, -F or -K itself.
+# So the flags bat would normally supply have to be spelled out in full here.
+# -R raw control chars (without it less eats the SGR escapes and colour dies)
+# -F quit-if-one-screen (short files return immediately instead of waiting for q)
+# -K quit-on-intr (less exits with bat on Ctrl-C instead of being orphaned)
+# --mouse wheel scrolling under tmux; this can swallow text selection unless you
+#       hold shift. Needs less >= 551; this box has 590.
+# bat would also add -X for less < 530, which is irrelevant here.
+--pager="less -RFK --mouse"
+
+
+# --- Colour -----------------------------------------------------------------
+# --color and --decorations are deliberately left at their `auto` defaults.
+# That is the whole mechanism behind "coloured in my terminal, plain when an AI
+# agent or a pipe is reading it". Setting --color=always would break the second
+# half of that requirement.
+
+# --- Syntax mapping examples (uncomment as needed) --------------------------
+# Teach bat about files whose extension does not imply their language:
+#--map-syntax "*.nix:Nix"
+#--map-syntax "*.conf:INI"
+#--map-syntax "justfile:Makefile"

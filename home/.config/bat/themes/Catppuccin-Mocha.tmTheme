@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>name</key>
+	<string>Catppuccin Mocha</string>
+	<!--
+		bat ships 24 built-in themes and none of them is Catppuccin, so this is a
+		hand-written tmTheme mapped 1:1 onto the Catppuccin Mocha palette.
+
+		Why tmTheme at all: bat resolves highlighting through syntect, which only
+		understands tmTheme plists. The file must live in $HOME/.config/bat/themes/
+		(ending in .tmTheme) and then be compiled into the asset cache with
+		"bat cache" in build mode, otherwise bat silently keeps using its built-ins.
+
+		Rule order matters. TextMate/syntect applies the LAST matching selector, so
+		this list runs general -> specific on purpose: the broad `keyword` rule comes
+		early so that `keyword.operator` and `storage.type` can refine it below.
+
+		Italics are deliberately never emitted. bat's italic-text option defaults to
+		"never", and forcing it on to "fix" comments renders badly under tmux,
+		which this setup does use. Comment legibility comes from the muted
+		overlay0 colour instead, which is contrast-based rather than shape-based.
+	-->
+	<key>settings</key>
+	<array>
+		<dict>
+			<key>settings</key>
+			<dict>
+				<key>background</key>
+				<string>#1e1e2e</string>
+				<key>foreground</key>
+				<string>#cdd6f4</string>
+				<key>caret</key>
+				<string>#f5e0dc</string>
+				<key>selection</key>
+				<string>#45475a</string>
+				<key>lineHighlight</key>
+				<string>#313244</string>
+				<key>invisibles</key>
+				<string>#585b70</string>
+				<key>lineHighlightBorder</key>
+				<string>#313244</string>
+			</dict>
+		</dict>
+
+		<!-- Comments: muted overlay0. No italic, see header note. -->
+		<dict>
+			<key>name</key>
+			<string>Comment</string>
+			<key>scope</key>
+			<string>comment, punctuation.definition.comment</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#6c7086</string>
+			</dict>
+		</dict>
+
+		<!-- Keywords / storage: mauve -->
+		<dict>
+			<key>name</key>
+			<string>Keyword and storage</string>
+			<key>scope</key>
+			<string>keyword, storage</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#cba6f7</string>
+			</dict>
+		</dict>
+		<!-- Operators: pink (refines the broad keyword rule) -->
+		<dict>
+			<key>name</key>
+			<string>Operator</string>
+			<key>scope</key>
+			<string>keyword.operator</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#f5c2e7</string>
+			</dict>
+		</dict>
+
+		<!-- Constants: peach, with self/this/true/false picked out in sky -->
+		<dict>
+			<key>name</key>
+			<string>Constant</string>
+			<key>scope</key>
+			<string>constant</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#fab387</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Constant language</string>
+			<key>scope</key>
+			<string>constant.language</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#89dceb</string>
+			</dict>
+		</dict>
+
+		<!-- Strings: green -->
+		<dict>
+			<key>name</key>
+			<string>String</string>
+			<key>scope</key>
+			<string>string</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#a6e3a1</string>
+			</dict>
+		</dict>
+		<!-- Escape sequences: pink, so \n/\e stand out inside a green string -->
+		<dict>
+			<key>name</key>
+			<string>String escape</string>
+			<key>scope</key>
+			<string>constant.character.escape</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#f5c2e7</string>
+			</dict>
+		</dict>
+
+		<!-- Function names: blue; builtins: teal -->
+		<dict>
+			<key>name</key>
+			<string>Function name</string>
+			<key>scope</key>
+			<string>entity.name.function, variable.function</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#89b4fa</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Support function</string>
+			<key>scope</key>
+			<string>support.function, support.macro</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#94e2d5</string>
+			</dict>
+		</dict>
+
+		<!-- Types and classes: yellow -->
+		<dict>
+			<key>name</key>
+			<string>Type and class</string>
+			<key>scope</key>
+			<string>entity.name.type, entity.name.class, support.type, support.class</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#f9e2af</string>
+			</dict>
+		</dict>
+
+		<!-- Parameters: maroon (cooler than red, so signatures stay readable) -->
+		<dict>
+			<key>name</key>
+			<string>Variable parameter</string>
+			<key>scope</key>
+			<string>variable.parameter</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#eba0ac</string>
+			</dict>
+		</dict>
+
+		<!-- Tags: lavender; attribute names: teal -->
+		<dict>
+			<key>name</key>
+			<string>Tag</string>
+			<key>scope</key>
+			<string>entity.name.tag, meta.tag</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#b4befe</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Attribute name</string>
+			<key>scope</key>
+			<string>entity.other.attribute-name</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#94e2d5</string>
+			</dict>
+		</dict>
+
+		<!-- Invalid / deprecated: red. This is the one colour worth an alarm. -->
+		<dict>
+			<key>name</key>
+			<string>Invalid</string>
+			<key>scope</key>
+			<string>invalid, invalid.deprecated</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#f38ba8</string>
+			</dict>
+		</dict>
+
+		<!-- Markdown / markup -->
+		<dict>
+			<key>name</key>
+			<string>Markup heading</string>
+			<key>scope</key>
+			<string>markup.heading, entity.name.section</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#89b4fa</string>
+				<key>fontStyle</key>
+				<string>bold</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Markup bold</string>
+			<key>scope</key>
+			<string>markup.bold</string>
+			<key>settings</key>
+			<dict>
+				<key>fontStyle</key>
+				<string>bold</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Markup italic</string>
+			<key>scope</key>
+			<string>markup.italic</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#cba6f7</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Markup underline</string>
+			<key>scope</key>
+			<string>markup.underline</string>
+			<key>settings</key>
+			<dict>
+				<key>fontStyle</key>
+				<string>underline</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Markup link</string>
+			<key>scope</key>
+			<string>markup.underline.link, string.other.link</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#89b4fa</string>
+				<key>fontStyle</key>
+				<string>underline</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>name</key>
+			<string>Markup raw</string>
+			<key>scope</key>
+			<string>markup.raw, markup.raw.block, markup.list</string>
+			<key>settings</key>
+			<dict>
+				<key>foreground</key>
+				<string>#a6e3a1</string>
+			</dict>
+		</dict>
+	</array>
+	<key>uuid</key>
+	<string>7a3f2b1e-9c4d-4e88-b5a6-1d0e5f8c2b40</string>
+</dict>
+</plist>
