@@ -526,4 +526,16 @@ config.key_tables = {
 	},
 }
 
+-- Local overrides. wezterm auto-loads only wezterm.lua, so config.lua sits here
+-- unused unless something requires it -- which is why it went dead for so long:
+-- it looked configured, and set the window transparency that never appeared.
+-- Applied last so these win over anything set above.
+--
+-- Copied key by key rather than deep-merged, because it is two flat scalars and
+-- a merge helper would be more code than the thing it merges. Adding a key to
+-- config.lua is all that is needed to have it take effect here.
+for key, value in pairs(require("config")) do
+	config[key] = value
+end
+
 return config
