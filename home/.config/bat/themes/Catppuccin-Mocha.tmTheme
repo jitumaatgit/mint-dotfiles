@@ -5,17 +5,31 @@
 	<key>name</key>
 	<string>Catppuccin Mocha</string>
 	<!--
-		bat ships 24 built-in themes and none of them is Catppuccin, so this is a
-		hand-written tmTheme mapped 1:1 onto the Catppuccin Mocha palette.
+		bat 0.26.1 lists 28 themes and four of them ARE built-in Catppuccin
+		variants (Frappe, Latte, Macchiato, Mocha). So this file is a deliberate
+		override of the built-in "Catppuccin Mocha", not a backfill for a gap.
+		Two reasons it earns its place, both verified by rendering the same file
+		under each theme: the built-in puts comments on overlay2 (#9399b2) while
+		this one uses overlay0 (#6c7086), and it adds bold-blue headings, mauve
+		italics and underlined links. The palette mapping on ordinary code scopes
+		is otherwise identical. See the sibling config file for the filename-based
+		naming trap that decides which of the two actually gets used.
+
+		The mapping is 1:1 onto the Catppuccin Mocha palette.
 
 		Why tmTheme at all: bat resolves highlighting through syntect, which only
 		understands tmTheme plists. The file must live in $HOME/.config/bat/themes/
 		(ending in .tmTheme) and then be compiled into the asset cache with
 		"bat cache" in build mode, otherwise bat silently keeps using its built-ins.
 
-		Rule order matters. TextMate/syntect applies the LAST matching selector, so
-		this list runs general -> specific on purpose: the broad `keyword` rule comes
-		early so that `keyword.operator` and `storage.type` can refine it below.
+		Rule order does NOT matter here. TextMate resolves competing rules by the
+		LAST match, but syntect does not: it scores selector specificity, so
+		`keyword.operator` beats `keyword` no matter which is declared first.
+		Verified with two probe themes over the same syntax, broad-before-narrow
+		and narrow-before-broad; both rendered the operator in the narrow colour.
+		The list is written general -> specific for readability only, so do not
+		reorder it expecting a behavioural change, and do not assume the
+		ordering is load-bearing.
 
 		Italics are deliberately never emitted. bat's italic-text option defaults to
 		"never", and forcing it on to "fix" comments renders badly under tmux,

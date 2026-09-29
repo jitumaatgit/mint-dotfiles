@@ -1,33 +1,56 @@
 # bat configuration. Each non-comment line is one command-line option that bat
 # applies as if it had been typed, so CLI flags still override anything set here.
 #
-# Resolved paths for this build:
+# Resolved paths on this box (XDG_CONFIG_HOME unset):
 #   config file : $HOME/.config/bat/config
 #   themes      : $HOME/.config/bat/themes/*.tmTheme
 #   cache       : $HOME/.cache/bat
 #
-# Note that bat IGNORES XDG_CONFIG_HOME here: it hardcodes $HOME/.config/bat and
-# will silently read nothing if you set XDG_CONFIG_HOME and expect it to move.
-# That is verified behaviour on 0.26.1, not a guess.
+# bat 0.26.1 DOES honour XDG_CONFIG_HOME for the config and themes dirs, and
+# $XDG_CONFIG_HOME takes precedence over $HOME/.config. Verified by putting
+# --theme="Nord" in $XDG_CONFIG_HOME/bat/config: comments then rendered #616e88
+# (Nord) instead of #6c7086 (this repo's Catppuccin theme).
+#
+# That matters here because ~/.config/bat is a stow symlink. The day anyone
+# exports XDG_CONFIG_HOME in a profile, the entire stowed config is bypassed
+# and bat silently reverts to defaults. BAT_CONFIG_PATH overrides all of it.
+#
+# (0.24.0, the apt build, ignored XDG_CONFIG_HOME entirely and only looked at
+# $HOME/.config/bat. Do not carry that conclusion over from an older bat.)
 
 
 # --- Theme ------------------------------------------------------------------
 # bat names a custom theme after its FILENAME, not after the `name` key inside
 # the plist. So themes/Catppuccin-Mocha.tmTheme is selected as
 # `--theme=Catppuccin-Mocha` (hyphen). Passing "Catppuccin Mocha" with a space
-# silently resolves to the BUILT-IN theme of that name that 0.26.1 ships, which
-# looks identical and is why the mistake goes unnoticed.
+# silently resolves to the BUILT-IN theme of that name, which 0.26.1 ships and
+# which is close enough to pass a glance -- but not identical, so the swap is
+# easy to miss. Measured differences, same input, built-in vs this theme:
+#   comment   //   #9399b2 overlay2   vs  #6c7086 overlay0
+#   operator  =    #94e2d5 teal       vs  #f5c2e7 pink
 #
-# Custom themes must be recompiled into the asset cache after any edit:
-#   bat cache --build
+# Custom themes live in a compiled cache, so `bat cache --build` is needed after
+# ANY edit to the theme -- and also once on a fresh machine, because bat does not
+# build that cache on first run. install.sh now does it; run it by hand if you
+# copy this config somewhere new. Symptom of a stale cache: comments render
+# #75715e and a stderr line says "Unknown theme 'Catppuccin-Mocha'".
+#
+# Known bat 0.26.1 quirk, no workaround: that same stderr warning is printed by
+# `bat --help`/`-h` even with a correctly built cache, because the help path
+# validates the theme against the prebuilt asset set rather than the compiled
+# one. It affects only --help. Moving the theme to BAT_THEME does NOT silence
+# it (verified), and --no-config is the only thing that does.
 --theme="Catppuccin-Mocha"
 
 
 # --- Decorations ------------------------------------------------------------
 # numbers  line-number gutter
 # changes  git modification markers (verified working on 0.26.1)
-# header   filename banner above the content
+# header   alias for header-filename; no size is shown
 # grid     vertical/horizontal rules separating gutter from content
+#
+# `snip` is in bat's `default` style and is deliberately NOT listed here: it
+# draws a separator between disjoint printed line ranges and was not wanted.
 #
 # These are suppressed automatically when output is piped, because
 # --decorations defaults to `auto`. That is deliberate and load-bearing: it is

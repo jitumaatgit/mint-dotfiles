@@ -5,17 +5,29 @@ local config = wezterm.config_builder()
 -- default shell is zsh (user's login shell on Mint)
 config.default_prog = { "zsh", "-l" }
 -- appearance settings
--- "Unifont" is the last-resort fallback, not a text font. It exists solely to
--- cover the codepoints Cascadia/JetBrains miss, which is how wezterm logged
---   WARN wezterm_font > No fonts contain glyphs for these codepoints: \u{7bb}.
--- U+07BB (NKO LAJANYALAN) is the one that bit us. Note that apt's fonts-unifont
--- ships only .otf, and it resolves through FontConfig -- verified with
---   wezterm ls-fonts --codepoints 7bb
--- which now reports unifont_sample.otf. So no hand-built .ttf is needed.
+-- Do NOT add "Unifont" to this chain. It looks like a safe last-resort entry
+-- and is not: Unifont covers the whole BMP, so wezterm tries it before its
+-- fontconfig fallback and it wins entire scripts. Verified by A/B against
+-- this file with the entry removed:
+--   U+4E00/U+6587 CJK     Noto Serif CJK SC   -> Unifont (16x16 bitmap)
+--   U+1780    Khmer      Noto Sans Khmer      -> Unifont
+--   U+1000    Myanmar   Noto Serif Myanmar   -> Unifont
+--   U+0D4E    Malayalam  Noto Serif Malayalam -> Unifont
+-- The original warning,
+--   WARN wezterm_font > No fonts contain glyphs for these codepoints: \u{7bb},
+-- was fixed by installing apt's fonts-unifont, not by this config: fontconfig
+-- picks the font up on its own and `wezterm ls-fonts --codepoints 7bb` then
+-- reports unifont_sample.otf. To pin such a codepoint without shadowing
+-- whole scripts, scope it with config.font_rules instead of font_with_fallback.
+-- The second entry must be the family name fontconfig actually knows. "JetBrains
+-- Mono" does not resolve: it matches nothing installed and wezterm silently
+-- substitutes its own built-in placeholder, so the whole second tier was
+-- drawing tofu. Verified with a single-font config and `ls-fonts --codepoints 0041`:
+--   "JetBrains Mono"                -> no font file (built-in placeholder)
+--   "JetBrainsMono Nerd Font Mono"  -> JetBrainsMonoNerdFontMono-Regular.ttf
 config.font = wezterm.font_with_fallback({
 	"CaskaydiaCove NF",
-	"JetBrains Mono",
-	"Unifont",
+	"JetBrainsMono Nerd Font Mono",
 })
 config.enable_kitty_keyboard = true
 config.animation_fps = 1
@@ -194,7 +206,12 @@ local function show_move_pane_selector(window, pane, direction)
 	})
 
 	wezterm.log_info("list panes success: " .. tostring(success))
-	wezterm.log_info("list panes stdout: " .. stdout)
+	-- tostring(): run_child_process returns a nil stdout on failure, and
+	-- concatenating nil raises, which would abort before the guard below and
+	-- make the toast unreachable. Verified in lua5.1:
+	--   pcall(function() return "x" .. nil end)          -> false, "attempt to concatenate"
+	--   pcall(function() return "x" .. tostring(nil) end) -> true
+	wezterm.log_info("list panes stdout: " .. tostring(stdout))
 
 	if not success then
 		window:toast_notification("Failed to list panes: " .. (stderr or "unknown error"))

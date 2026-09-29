@@ -28,8 +28,19 @@ archive="${WEZTERM_LOG_ARCHIVE:-$HOME/.local/state/wezterm/archive}"
 
 die() { printf 'wezterm-log: %s\n' "$1" >&2; exit 1; }
 
-# Newest log by mtime; empty output if wezterm has never run this boot.
-current_log() { ls -t "$runtime_dir"/wezterm-gui-log-*.txt 2>/dev/null | head -n1; }
+# Newest log by mtime. Uses a glob loop rather than `ls -t | head -n1` so that an
+# empty directory yields nothing instead of the literal unexpanded pattern, and
+# so no subprocess can die on SIGPIPE (at ~60k files `head` exits after one line,
+# `ls` takes EPIPE, and the empty result produced a misleading "has wezterm run
+# this boot?" even when 60k logs were sitting right there).
+current_log() {
+	local f newest= f
+	for f in "$runtime_dir"/wezterm-gui-log-*.txt; do
+		[ -f "$f" ] || continue
+		if [ -z "$newest" ] || [ "$f" -nt "$newest" ]; then newest=$f; fi
+	done
+	printf '%s\n' "$newest"
+}
 
 need_log() {
 	local f; f="$(current_log)"
@@ -45,6 +56,16 @@ show)
 	;;
 list)
 	[ -d "$runtime_dir" ] || die "$runtime_dir does not exist"
+	# The dir can exist and still be empty, which would otherwise reach ls as a
+	# literal glob and produce a raw "No such file or directory" instead of a
+	# designed message.
+	# `local` is illegal here: a case branch is not a function scope, and bash
+	# fails with "local: can only be used in a function".
+	found=
+	for f in "$runtime_dir"/wezterm-gui-log-*.txt; do
+		[ -f "$f" ] && { found=1; break; }
+	done
+	[ -n "$found" ] || die "no wezterm logs in $runtime_dir"
 	ls -lt --time-style=long-iso "$runtime_dir"/wezterm-gui-log-*.txt
 	;;
 tail)
