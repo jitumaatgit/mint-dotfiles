@@ -5,7 +5,8 @@ return {
       auto_enable = true,
       auto_enable_stdin = true,
       theme = "catppuccin",
-      filetypes = { "log", "ansi", "txt", "output" },
+      -- netrw is what `gf` lands in for http(s) fetches
+      filetypes = { "log", "ansi", "txt", "output", "netrw" },
     })
   end,
 }

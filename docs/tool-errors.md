@@ -11,8 +11,8 @@ Verbatim messages, what caused them, and what to do instead.
 
 | Tool | Error | Verdict |
 |---|---|---|
-| `edit` | `REM <path>` rejected: *"payload line has no preceding hunk header"* | **Likely tool bug** — `REM` is documented for file deletion but is not parsed as a hunk, even as the only op |
-| `edit` | Multi-file payload: only the first file's op applied | **Likely tool bug** — later `[path#tag]` headers ignored without a warning |
+| `edit` | `REM <path>` rejected: *"payload line has no preceding hunk header"* | My payload — `REM` takes no argument; the path argument was parsed as a body row |
+| `edit` | Multi-file payload: only the first file's op applied | Not the cause — a cross-file regression, see below |
 | `edit` | `CUT` followed by body rows: *"CUT ... takes no body rows"* | My payload — misrouted rows between files |
 | `edit` | *"Auto-prefixed bare body row(s) with `+`"* then body applied at the wrong line | My payload — two `PUT >N` in one call, stale line numbers |
 | `task` | *"Service mode does not accept async or timeout"* | My call — wrong combination, documented in the schema |
@@ -20,12 +20,15 @@ Verbatim messages, what caused them, and what to do instead.
 | `bash` | `ipairs` on `nvim_exec2("messages").output` | My call — `.output` is a string, not a list |
 | `bash` | `JSONDecodeError` on pretty-printed multi-record log | My stub's fault — record separator, not JSON lines |
 
-Two of the eight are plausibly defects in the `edit` tool itself. Both are
-reproduced first below.
+None of the eight is a tool defect. The two originally filed as "Likely tool
+bug" were re-checked against upstream source on 2026-09-28 and were both my
+payload; see the `REM` and multi-file sections. One earlier conclusion *is* a
+tool defect — a misleading error message from the seen-line guard, documented
+under [The seen-line guard](#the-seen-line-guard) below.
 
 ## `edit`
 
-### `REM` is not recognised as a hunk
+### `REM <path>` — the argument is the bug
 
 ```
 line 1: payload line has no preceding hunk header. Use `PUT N.=M:`,
@@ -33,33 +36,57 @@ line 1: payload line has no preceding hunk header. Use `PUT N.=M:`,
 Got "REM /home/mint/mint-dotfiles/home/.config/nvim/lua/custom/checkmate_notify.lua"
 ```
 
-`REM <path>` is documented for deleting a file, but it was rejected in a
-payload that also carried other ops, and again when it was the only op.
-Tried three times with the same result.
-
-Minimal repro — one op, nothing else in the payload:
+`REM` takes **no argument**. The path comes from the `[path#tag]` header, so
+`REM <path>` is a body row with no hunk header above it — the parser is
+right and the payload was wrong. Upstream fixtures use bare `REM`
+(`crates/pi-edit/src/session.rs:436`: `"[legacy.txt#FFFF]\nREM\n…"`), and
+`patcher.rs:441` maps `FileOp::Rem` to `EngineFileOp::Delete`.
 
 ```
 [/abs/path/to/file.lua#A1B2]
-REM /abs/path/to/file.lua
+REM
 ```
 
-Expected: file deleted. Actual: the error above. Tried and rejected
-identically: `REM` with a relative path, `REM` with no `[path#tag]` header
-line, and `REM` as the trailing op of a multi-file payload. There is
-currently no way to delete a file through the tool.
+The original repro also failed because the file had never been read, so
+there was no tag to cite. This was misfiled as a tool defect on the
+assumption that deletion was unsupported; it is not. `rm` was a valid
+workaround but the conclusion "there is no way to delete a file through
+the tool" was wrong.
 
-**Workaround:** `rm` the file, then verify with `ls`/`grep` that nothing
-references it. Also removes any live symlink that now dangles.
+**Correct form:** bare `REM` under a `[path#tag]` header for a file you
+have already read.
 
-### Multiple files in one payload do not parse
+### Multi-file payloads work — the original failure was the `REM` bug
 
-Mixing a hunk for `init.lua` with `REM` lines for two other files in a single
-`input` produced the "no preceding hunk header" error above, i.e. the parser
-never saw the second and third `[path#tag]` headers. Only the first file's op
-was applied.
+This entry was wrong twice. It first blamed a parser that ignores later
+`[path#tag]` headers, then (after finding the string *"Multiple entries in
+one call apply to the top-level `path`*" in the binary) concluded that
+multi-file payloads were unsupported. Both are wrong.
 
-**Workaround:** one file per `edit` call, even when the change is trivial.
+Retested 2026-09-28 against the current binary, two sections in one call:
+
+```
+[/tmp/xf-src.lua#8D5A]
+PUT 2.=2:
+-- touched
+[/tmp/xf-dst.lua#32A5]
+PUT 1.=1:
+-- also touched
+```
+
+Both applied to their own file. The documented cross-file move
+(`docs/tools/edit.md`) also works — `CUT 3.=5 @greet` followed by
+`PUT <2 @greet` under a second header, verified.
+
+The original failure was entirely `REM <path>`: the argument was a body
+row with no hunk above it, and the parser reported the *first* line of
+that row, which made it look like the later headers had been skipped.
+
+The `path` string above refers to the JSON-schema modes (`patch`,
+`replace`, `apply_patch`), which have a top-level `path` field — not to
+hashline section headers.
+
+**No workaround needed.** One file per call is not required.
 
 ### `CUT` takes no body
 
@@ -72,7 +99,10 @@ Fired when a `CUT` was followed by body rows intended for a different file.
 Purely my payload's fault, but the message points at the second file's row
 rather than the misplacement.
 
-**Workaround:** keep ops in separate calls; do not interleave.
+**Workaround:** `CUT`, `REM`, `MV` and register-pastes take no body rows.
+Put the body under a `PUT ...:` header and keep each op inside its own
+section — do not let one file's body rows fall under another file's
+header.
 
 ### Bare body rows get silently auto-prefixed
 
@@ -91,6 +121,106 @@ and `publish()`, leaving a stray `return f"{days}d"...` mid-function.
 re-read to get fresh line numbers, then insert the next. Always `python3 -c
 'ast.parse(...)'` or an equivalent syntax check after a multi-insert edit on
 a script — this one only surfaced because the syntax check was run.
+
+## The seen-line guard
+
+Not an error I hit, but the thing behind most of the friction in the table
+above, and the one conclusion in this file that *is* a real tool defect.
+
+`edit.enforceSeenLines` (default `true`) rejects an edit anchored to a line
+that no prior read or search displayed in full. It is not in
+`~/.omp/agent/config.yml` because it is a default; the setting lives at
+`cfg://edit/enforceSeenLines`. The guard is good — editing a line you never
+looked at is how files get mangled. The problem is that most of this config
+made whole files "unseen" without saying so.
+
+### The message is wrong
+
+```
+This edit anchors to lines 17-18 of /tmp/guard-probe.lua that
+[/tmp/guard-probe.lua#67E2] never displayed (it showed a partial range, a
+search hit, or a folded summary).
+```
+
+That is accurate. The misleading case is when the guard rejects a payload
+that carries a body row before any hunk header — the `REM` row above. The
+parser reports "no preceding hunk header" for a line the guard had already
+flagged as unseen, which sends you hunting for a syntax problem that does not
+exist. **Read the first line of the message before assuming a parse error.**
+
+### The retry path, and why rejections are cheap
+
+On rejection the tool reveals the *actual* file content at the offending
+lines and records them as seen (`crates/pi-edit/src/modes/hashline/patcher.rs:123-186`).
+So a straight retry of the identical payload succeeds **with no re-read**:
+
+```
+This edit anchors to lines 17-18 … never displayed … Actual file content at
+those lines:
+  17:end
+  18:
+Verify the content matches what you intend to touch, then re-issue the edit
+with the same [path#tag] header — a straight retry now succeeds without a
+re-read.
+```
+
+Verify the revealed content, then retry. If the reveal is itself truncated
+(or empty) the message instead asks for a ranged read, and only then is a
+re-read needed.
+
+### What counts as seen
+
+Recorded at render time into a session-scoped native store
+(`EditStore`, `crates/pi-edit/src/store.rs`):
+
+| Source | Counts as seen |
+|---|---|
+| `read` with a range selector, full file | the lines shown |
+| `read` **without** a selector, file over `read.summarize.minTotalLines` | only the lines the summary left unfolded |
+| `read` with `:raw` | the range displayed — `:raw` bypasses summarisation |
+| `grep` / `ast-grep` hit | the context lines rendered around the hit |
+
+The summary case is the one that bites: a 240-line `checkmate.lua` came back
+as 50 lines with 190 elided, and every anchor in the elided spans was
+rejected.
+
+### What does *not* clear it
+
+**Compaction does not.** The store is lazily created on the session object
+(`packages/coding-agent/src/edit/store.ts:15-18`) and populated by
+read/grep/ast-grep at render time; no compaction path calls `clear()` or
+`invalidate()`. An earlier guess that `snapcompact.toolResults: false` would
+wipe it was wrong — `toolResults` only controls what is kept in the
+transcript, not the store.
+
+**Auto-repair does, for that file.** When a broken edit is auto-repaired,
+`packages/coding-agent/src/edit/index.ts:541` calls
+`getEditStore(session).invalidate(path)`, which drops *every* version of that
+path. After any syntax warning, the file must be re-read before editing it
+again.
+
+The real ceiling is LRU eviction, not compaction: `DEFAULT_MAX_PATHS: 256`,
+`DEFAULT_MAX_VERSIONS_PER_PATH: 4`, `DEFAULT_MAX_TOTAL_BYTES: 64 MiB`
+(`store.rs:14-20`).
+
+### Settings changed on 2026-09-28
+
+In `home/.omp/agent/config.yml`, to stop the truncation from starving the
+guard. Kept `enforceSeenLines` on.
+
+| Setting | Was | Now |
+|---|---|---|
+| `read.defaultLimit` | 200 | 500 |
+| `read.summarize.minTotalLines` | 100 (default) | 500 |
+| `grep.contextAfter` | 3 | 10 |
+| `grep.contextBefore` | 1 | 5 |
+
+Verified: `checkmate.lua` (240 lines) now reads back verbatim with no elided
+spans.
+
+**Working rules under the guard:** cite a tag from a read you actually did;
+never compute line numbers from a read that has since been shifted by an
+edit; after an auto-repair warning, re-read the file.
 
 ## `task`
 

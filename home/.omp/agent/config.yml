@@ -114,7 +114,7 @@ advisor:
   maxNotesPerUpdate: 1
 prewalk:
   enabled: false
-steeringMode: one-at-a-time
+steeringMode: all
 followUpMode: all
 interruptMode: immediate
 loop:
@@ -147,7 +147,7 @@ tools:
   speculativeExecution:
     enabled: false
     maxInFlight: 1
-  maxTimeout: 300
+  maxTimeout: 600
 error:
   notify: "on"
 recap:
@@ -169,8 +169,9 @@ mnemopi:
   proactiveLinking: true
 read:
   renderMarkdown: false
-  defaultLimit: 200
+  defaultLimit: 500
   summarize:
+    minTotalLines: 500
     enabled: true
 bash:
   autoBackground:
@@ -252,11 +253,11 @@ update:
 async:
   enabled: true
 astGrep:
-  enabled: false
+  enabled: true
 find:
-  enabled: "off"
+  enabled: "on"
 checkpoint:
-  enabled: false
+  enabled: true
 omitThinking: false
 proseOnlyThinking: true
 model:
@@ -277,13 +278,13 @@ ttsr:
   enabled: true
 grep:
   enabled: true
-  contextAfter: 3
-  contextBefore: 1
+  contextAfter: 10
+  contextBefore: 5
 python:
   kernelMode: session
 readLineNumbers: true
 computer:
-  enabled: false
+  enabled: true
 tasks:
   todoClearDelay: 60
 cycleOrder:
@@ -295,5 +296,5 @@ power:
 isolation:
   backend: auto
 astEdit:
-  enabled: false
+  enabled: true
 hideThinkingBlock: false
