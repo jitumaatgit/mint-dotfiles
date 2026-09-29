@@ -135,7 +135,6 @@ table.insert(config.hyperlink_rules, {
 	format = "https://github.com/$1/$3",
 })
 
--- local merged_config = utils.merge_tables(config, local_config) - not used yet, from https://github.com/yutkat/dotfiles/blob/main/.config/wezterm/wezterm.lua
 
 -- show which key table is active in the status area
 ---@diagnostic disable-next-line: unused-local

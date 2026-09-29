@@ -13,4 +13,12 @@ if [ ! -L "$HOME/.bashrc" ]; then
   exit 1
 fi
 
+# wezterm's utils.lua is plain Lua with no test framework available, so it ships
+# a self-check. Run it from the repo path rather than the stowed one.
+echo "🧪 Running wezterm utils self-check"
+if ! lua5.1 "$REPO_ROOT/home/.config/wezterm/utils_test.lua"; then
+  echo "🚫 utils self-check failed"
+  exit 1
+fi
+
 echo "✅ Smoke test passed"
