@@ -138,15 +138,30 @@ hister-f() {
     local -a follow
     (( $# )) || follow=(-f)
     stdbuf -oL journalctl --user -u hister $follow "$@" -o cat |
-        awk -F' \\| ' -v OFS=' | ' '{
-            lvl = $2
-            if (lvl ~ /ERROR|FATAL|PANIC/) c = "31;1"   # bright red
-            else if (lvl ~ /WARN/)          c = "33;1"   # bright yellow
-            else if (lvl ~ /DEBUG|TRACE/)    c = "90"     # dim grey
-            else { print; next }                          # INFO and unknown: as-is
-            sub(/[ \t]+$/, "", lvl)                        # hister pads the level
-            $2 = sprintf("\033[%sm%s\033[0m", c, lvl)
-            print
+        awk '
+        function seg(s, a, b) { return substr(s, a, b - a + 1) }
+        {
+            line = $0
+            p1 = index(line, "|")
+            if (p1 == 0) { print line; next }
+            p2 = index(substr(line, p1 + 1), "|")
+            if (p2 == 0) { print line; next }
+            p2 += p1
+            ts   = seg(line, 1, p1 - 1)
+            rest = substr(line, p1 + 1, p2 - p1 - 1)
+            tail = substr(line, p2 + 1)
+            lvl = rest
+            gsub(/^[ \t]+|[ \t]+$/, "", lvl)
+            if (lvl ~ /ERROR|FATAL|PANIC/) c = "1;31"
+            else if (lvl ~ /WARN/)          c = "1;33"
+            else if (lvl ~ /DEBUG|TRACE/)    c = "90"
+            else                             c = "36"
+            gt = index(tail, ">")
+            if (gt > 0) { loc = substr(tail, 1, gt); msg = substr(tail, gt + 1) }
+            else { loc = ""; msg = tail }
+            gsub(/^[ \t]+/, "", loc); gsub(/[ \t]+$/, "", loc)
+            printf "\033[90m%s\033[0m \033[2m|\033[0m \033[%sm%-5s\033[0m \033[2m|\033[0m \033[35m%s\033[0m %s\n",
+                ts, c, lvl, loc, msg
         }'
 }
 alias rg='rg --hidden --color=auto'
