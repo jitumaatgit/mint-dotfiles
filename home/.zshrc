@@ -94,6 +94,13 @@ setopt interactivecomments # $ # foo doesn't become an error when hitting
                            # enter
 setopt ignore_eof # so C-d doesnt close window on an empty prompt
 
+# omp silently downgrades `edit.mode: hashline` to `replace` when the active
+# model classifies as kimi/mimo/minimax/deepseek/stepfun, which silently drops
+# the [path#TAG] drift check AND the seen-line guard -- `enforce_seen_lines`
+# is only passed to HashlineEngine, the other four modes don't accept it.
+# `mimo-v2.5` and `deepseek-v4-flash` are both in this repo's fallback chains,
+# so any fallback would do it. Strict mode keeps the flag set in config.yml.
+export PI_STRICT_EDIT_MODE=1
 eval "$(omp completions zsh 2>/dev/null)"
 zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
@@ -119,6 +126,29 @@ alias wm='workmux'
 alias dotsync='cd ~/mint-dotfiles && ./sync-from-home.sh && git diff'
 # --color=auto (not =always) so piping into another command stays clean.
 # -S is already set by ~/.ripgreprc, so it is not repeated here.
+# hister writes structured log lines to stdout at journald priority 6 (info):
+#   <RFC3339> | LEVEL | file.go:123 > message
+# journald only colours the priority field, and that field is uniform here, so
+# journalctl itself can never highlight an error. Colour the LEVEL token that
+# hister puts in the message body instead -- that is where the real severity
+# lives. -o cat drops journald's own prefix so the parse is not confused by it.
+hister-f() {
+    # Trailing args are passed through to journalctl, so `hister-f -n 50` and
+    # `hister-f -p warning` work; with none, it follows.
+    local -a follow
+    (( $# )) || follow=(-f)
+    stdbuf -oL journalctl --user -u hister $follow "$@" -o cat |
+        awk -F' \\| ' -v OFS=' | ' '{
+            lvl = $2
+            if (lvl ~ /ERROR|FATAL|PANIC/) c = "31;1"   # bright red
+            else if (lvl ~ /WARN/)          c = "33;1"   # bright yellow
+            else if (lvl ~ /DEBUG|TRACE/)    c = "90"     # dim grey
+            else { print; next }                          # INFO and unknown: as-is
+            sub(/[ \t]+$/, "", lvl)                        # hister pads the level
+            $2 = sprintf("\033[%sm%s\033[0m", c, lvl)
+            print
+        }'
+}
 alias rg='rg --hidden --color=auto'
 alias r='fc -s'
 if [[ -o interactive ]]; then
@@ -238,6 +268,15 @@ export LESS="-R"        # let less pass the SGR escapes through
 unset MANROFFOPT        # was "-c", which suppressed the styling entirely
 export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
 export RIPGREP_CONFIG_PATH="$HOME/.ripgreprc"
+# An agent-spawned shell can inherit TERM=dumb, which makes journald, git and
+# friends silently drop all colour. Only downgrade-in is a real case; never
+# override a TERM that is already capable, since that would clobber a
+# deliberately restrictive value (e.g. running inside a dumb CI pty on purpose).
+if [[ -z "$TERM" || "$TERM" == "dumb" ]]; then
+    [[ -n "$TMUX" ]] && export TERM=tmux-256color || export TERM=xterm-256color
+fi
+export SYSTEMD_COLORS=1
+
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.bun/bin:$PATH"
 
 for f in ~/notes/*.env(N); do [ -f "$f" ] && . "$f"; done

@@ -413,29 +413,19 @@ deletable or freezable (`do_list` help text). `archives` keeps the last
 The repo stows `home/` onto `$HOME`, so the config lives at
 `home/.config/offpunk/offpunkrc` and `stow -t $HOME home` puts it in place.
 
-> **`./install.sh` currently aborts, for an unrelated reason.** Stow refuses the
-> whole run because `~/.zshrc` is a regular file while `home/.zshrc` is tracked —
-> and the two have *diverged* (249 vs 213 lines; `$HOME` has compinit caching,
-> `select-quoted` ZLE bindings and a `batstat` alias the repo lacks). Stow's message:
+> **This used to abort; it no longer does.** Stow used to refuse the whole run
+> because `~/.zshrc` was a regular file while `home/.zshrc` was tracked, and the two
+> had diverged (249 vs 213 lines; `$HOME` had compinit caching, `select-quoted` ZLE
+> bindings and a `batstat` alias the repo lacked). The `$HOME` version was reconciled
+> into the repo and the link adopted, so `~/.zshrc` is now a symlink into
+> `home/.zshrc` and `stow -t $HOME -d ~/mint-dotfiles home` completes cleanly.
 >
-> ```
-> WARNING! stowing home would cause conflicts:
->   * existing target is neither a link nor a directory: .zshrc
-> All operations aborted.
-> ```
+> Verified 2026-09-28: `stow -n -t "$HOME" -d ~/mint-dotfiles home` reports no
+> conflicts and exits 0.
 >
-> Until that is reconciled (commit the `$HOME` version into the repo, then re-run,
-> or adopt the link with `stow --adopt`), no stowed file can be installed — including
-> `offpunkrc`. The rc file in this repo was therefore linked by hand, doing exactly
-> what stow would have done:
->
-> ```bash
-> mkdir -p ~/.config/offpunk
-> ln -sfn ../../mint-dotfiles/home/.config/offpunk/offpunkrc ~/.config/offpunk/offpunkrc
-> ```
->
-> Stow can confirm the rest of the plan without touching the filesystem:
-> `stow -n -v --ignore='\.zshrc' -t "$HOME" -d ~/mint-dotfiles home`.
+> The one consequence to remember: **`~/.zshrc` is no longer an independent file.**
+> Editing `~/.zshrc` edits `home/.zshrc` in the repo directly, so shell-config
+> changes are repo changes and belong in a commit here rather than in `home-git`.
 
 `[INFERENCE]` the only file that belongs in the repo is `offpunkrc`. Do **not** stow
 `~/.cache/offpunk`, `~/.local/share/offpunk/lists` (they mutate constantly) or
