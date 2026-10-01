@@ -26,10 +26,12 @@ same bytes for any stowed path.
 allowlist `sync-from-home.sh` uses. Untracked files under `home/` are never
 pulled back, which is deliberate: it keeps vendored checkouts and caches out.
 
-**repo-only file** — Tracked under `home/` but never deployed to `$HOME`.
-`home/.omp/.gitignore` is the only one: stow excludes `.gitignore` files from
-linking, so it is reachable only by running plain stow by hand. It is kept as
-defence in depth, not as protection for the current layout.
+**repo-only file** — Tracked under `home/` but never deployed as a symlink in its
+own right. `home/.omp/.gitignore` is the only one, because stow excludes
+`.gitignore` files from individual links. It reaches `$HOME` only when stow
+folds `~/.omp` into a directory symlink, and there it is load-bearing: it is
+what keeps omp's runtime state out of the repo. Under `--no-folding` it is not
+deployed and not needed.
 
 **`dotsync`** — Shell alias: `cd ~/mint-dotfiles && ./sync-from-home.sh &&
 git diff`. The standard review loop after touching anything under `$HOME`.
