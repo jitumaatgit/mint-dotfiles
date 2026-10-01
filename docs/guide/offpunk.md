@@ -429,7 +429,7 @@ The repo stows `home/` onto `$HOME`, so the config lives at
 
 `[INFERENCE]` the only file that belongs in the repo is `offpunkrc`. Do **not** stow
 `~/.cache/offpunk`, `~/.local/share/offpunk/lists` (they mutate constantly) or
-`~/.local/share/offpunk/certs` — the repo's own `notes/docs/workflow.md` says the same
+~/.local/share/offpunk/certs` — the repo's own `docs/guide/stow-workflow.md` says the same
 thing about caches and runtime state. `lists/` is user data, not dotfiles; back it up
 separately if it matters.
 

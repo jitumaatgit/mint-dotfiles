@@ -6,7 +6,7 @@
 
 * **Single source of truth** – all configuration files live in the repository; the symlinks in `~` simply point to them.
 * **Atomic deployment** – `stow -t ~ -d ~/mint-dotfiles home` creates/moves all pipes in one step.
-* **Undo/rollback** – `stow -R` restores the previous state or removes symlinks cleanly.
+* **Undo/rollback** – `stow -D -t ~ home` removes the symlinks cleanly. (`-R` is *restow*, not rollback: it re-applies the package, replacing existing links.)
 
 Use it when:
 * You want version‑controlled dotfiles.
@@ -39,9 +39,9 @@ Do *not* use `stow` for temporary or runtime files (caches, fonts, runtime state
 | Utility | Purpose | When to Run |
 |---------|---------|-------------|
 | `install.sh` | Create or restore the `$HOME` symlink tree from `./home/`. | First‑time setup or after a major change to the repo layout. |
-| `sync-from-home.sh` | Efficiently pull *any* modifications made in `$HOME` back into the repo. | After editing a file that lives in `$HOME`. |
+| `sync-from-home.sh` | Pull **git-tracked** files under `home/` back from `$HOME`, using rsync `-aL`. Untracked files are never swept in. | After editing a file that lives in `$HOME`. |
 | `dotsync` alias | Convenience wrapper: `cd ~/mint-dotfiles && ./sync-from-home.sh && git diff`. | After you modify a stowed file and want to review changes before committing. |
-| `autocmds.lua` | Notify user when a stowed file changes (`BufWritePost …`). | During development – ensures you remember to `dotsync`. |
+| `home/.config/nvim/lua/config/autocmds.lua` | `BufWritePost` on `*/mint-dotfiles/home/**` → "run :!dotsync". | During development – ensures you remember to `dotsync`. |
 
 ## 4. Typical Workflow
 
@@ -61,7 +61,7 @@ Do *not* use `stow` for temporary or runtime files (caches, fonts, runtime state
    ```bash
    stow -R -t ~ -d "~/mint-dotfiles" home
    ```
-5. **Re‑run scripts** if you modify any of the helper scripts (`install.sh`, `sync-from-home.sh`). They are automatically re‑executed when they are sourced.
+5. **Re‑run the helper scripts** yourself after editing them. Nothing sources `install.sh` or `sync-from-home.sh`, so a saved change to either takes effect on the *next* invocation, not automatically.
 
 ## 5. When to Use Scripts vs Stow
 

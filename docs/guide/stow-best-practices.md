@@ -44,8 +44,8 @@ cd ~/mint-dotfiles
 git add -p && git commit -m "Sync configs"
 ```
 
-* `install.sh` should use `-R` (recursive) and `--ignore-dot-files` to avoid stow creating dots on top‑level files.
-* `sync-from-home.sh` copies the *live* files into the repo and stages them.
+* `install.sh` here runs `stow -t "$HOME" -d "$REPO_ROOT" home` — no `-R`, no `--ignore-dot-files`; the top-level dotfiles stow correctly as-is. It then builds the bat theme cache, which must run *after* stow.
+* `sync-from-home.sh` pulls only **git-tracked** files under `home/` (allowlist built from `git ls-files`), and stages nothing — review with `git diff` and stage yourself.
 
 ## 4. Ignore patterns
 
@@ -114,8 +114,9 @@ set -e
 stow -t ~ ...
 ```
 
-* `-R` for recursive packages.
-* `-d` to delete existing links before recreating.
+* `-R` / `--restow` re-applies a package, replacing existing links. It is **not** a rollback.
+* `-D` / `--delete` unstows — removes the symlinks.
+* `-d` / `--dir` sets the *source* directory. Easy to misread as "delete".
 * `-v` for verbose.
 
 ### sync-from-home.sh
@@ -124,9 +125,11 @@ stow -t ~ ...
 #!/usr/bin/env bash
 set -e
 
-# Pull live changes into repo
-rsync -av --prune-source $HOME/* ~/mint-dotfiles/home/
-rsync -av --prune-source ~/.config/* ~/mint-dotfiles/home/.config/
+# Pull live changes into repo, tracked files only.
+# The allowlist is what keeps vendored checkouts and caches out.
+mapfile -d '' -t tracked < <(git ls-files -z -- home/)
+rsync -aL --from0 --files-from=<(printf '%s\0' "${tracked[@]#home/}") \
+      "$HOME/" ~/mint-dotfiles/home/
 ```
 
 * Exclude ignored local files via `--exclude`.
@@ -136,7 +139,7 @@ rsync -av --prune-source ~/.config/* ~/mint-dotfiles/home/.config/
 * Keep all config files in a single repo; no sub‑repos unless you intentionally isolate a set.
 * Use a branching strategy: `main` for stable configs, `dev` for experimental changes.
 * Commit changes only after verifying the symlinked files work.
-* Add a `post‑merge` hook to run `stow -dR -t ~` automatically on pulls.
+* Add a `post‑merge` hook to run `stow -R -t ~ home` automatically on pulls.
 
 ## 10. Testing & verification
 

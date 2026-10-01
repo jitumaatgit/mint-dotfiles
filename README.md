@@ -56,7 +56,7 @@ stow -D -t $HOME --dry-run home
 ## Structure
 
 - `home/`: dotfiles root (mirrors `$HOME`), managed by stow
-- `docs/`: documentation
-- `notes/`: markdown notes
+- `docs/`: documentation — `docs/adr/` (architecture decisions), `docs/guide/` (workflows)
+- `CONTEXT.md`: domain vocabulary — read before proposing terminology
 - `install.sh`: deployment script
 - `sync-from-home.sh`: sync script for live changes
