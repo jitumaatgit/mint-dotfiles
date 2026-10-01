@@ -172,7 +172,7 @@ if [[ -o interactive ]]; then
   # replaced by "n". It also breaks -v, -E and --include=. Use rg (below),
   # which is already aliased, or `command grep` when you need real grep.
   alias ls='eza --color=always --icons --group-directories-first -a'
-  alias cat='bat --style=plain --paging=never'
+  alias cat='bat'
 fi
 
 # apt fzf 0.44 lacks `fzf --zsh`; source the shipped example files instead.
@@ -337,6 +337,179 @@ fi
 # tldr completion. This is appended after oh-my-zsh has already run compinit, so
 # it is not in the compdump -- but zsh still autoloads _tldr from fpath on
 # demand, so completion works. Verified: `tldr gi<TAB>` completes.
+
+# Hister crawl job helpers.
+#
+#   hlog  [log]     live tail, scrollable, q quits     (no colour -- see below)
+#   hlogc [log] [n] last n lines, Catppuccin coloured, paged   (static)
+#   hstat [job]     crawl job STATE counters, coloured        (static)
+#
+# WHY NO `watch`, and why not `tail -f | bat`: those two cannot be combined.
+#
+#   bat buffers stdin until EOF, so `tail -f ... | bat` renders nothing at
+#   all, forever. bat 0.26.1 has no --follow either (`-r` is --line-range).
+#   A redrawing loop is the usual workaround, and `watch` is the obvious
+#   choice -- but procps-ng 4.0.4 does not hand the command to a shell, it
+#   re-tokenises it itself. Under a real pty it printed its own header and
+#   then nothing at all: the `| bat ...` half never ran. That is why the old
+#   hlog/hstat came out uncoloured and full-screen.
+#
+#   So the two behaviours are split across two functions instead of faked
+#   into one:
+#     - live tail  -> `tail -f | less -R +F`. less follows the stream, keeps
+#       scrollback, `q` quits, F toggles follow. No colour: a pipe into less
+#       is just bytes, there is no highlighter in the chain.
+#     - colour     -> bat reading a FINITE chunk, so it sees EOF and renders.
+#       Catppuccin via ~/.config/bat/config; --color/--decorations=always are
+#       spelled out because config deliberately leaves them at `auto` (that
+#       is what keeps `bat f | rg x` clean for scripts). Do not set
+#       XDG_CONFIG_HOME -- that bypasses the stowed config and silently
+#       reverts the theme.
+#
+#   --file-name makes bat's header show the real path; without it bat prints
+#   STDIN, because it is reading a pipe.
+# NO PATH DEFAULT, deliberately. The old default was /tmp/hister-sectionb.log,
+# a job that finished on 2026-09-29 — a dead file. That is the worst possible
+# default for a follow-mode command: `tail -f` on a file that will never grow
+# never prints anything and never exits, so hlog looks broken and has to be
+# killed. Same for HISTER_JOB pointing at the finished section-b crawl.
+#
+# With no argument, hlog/hlogc now track hister's live journal, which is the
+# only hister feed that is current whenever hister is running. Pass a path to
+# follow or snapshot a specific file instead:  hlog /tmp/whatever.log
+#
+# Do not add a [ -t 1 ] guard here. These are run in a real terminal; an
+# agent-side tool call is non-TTY and must simply not run hlog at all.
+HREINDEX_UNIT="${HREINDEX_UNIT:-hister.service}"
+
+hlog() {
+  if [[ -n "$1" ]]; then
+    tail -f "$1" | less -R +F
+  else
+    journalctl --user -u "$HREINDEX_UNIT" -f -o cat | less -R +F
+  fi
+}
+
+hlogc() {
+  #   hlogc            -> 40 lines of the journal
+  #   hlogc 200        -> 200 lines of the journal
+  #   hlogc FILE [N]   -> N lines of FILE (default 40)
+  # A bare number is a line count, not a path. Without that, `hlogc 3` is read
+  # as a file named "3" and dies with a confusing tail error.
+  local log="" n=40
+  if [[ -z "$1" || "$1" == <-> ]]; then
+    [[ -n "$1" ]] && n="$1"
+  else
+    log="$1"
+    [[ -n "$2" ]] && n="$2"
+  fi
+  if [[ -n "$log" ]]; then
+    tail -n "$n" "$log" | bat -l log --color=always --paging=always --file-name="$log"
+  else
+    journalctl --user -u "$HREINDEX_UNIT" --no-pager -o cat -n "$((n * 20))" \
+      | tail -n "$n" | bat -l log --color=always --paging=always --file-name="$HREINDEX_UNIT"
+  fi
+}
+
+HISTER_JOB="${HISTER_JOB:-section-b-urls.txt}"   # a crawl job name, not a path
+
+# hstat deliberately shows only the STATE block. `hister crawl show` also dumps
+# the full ValidatorRules JSON, which is static and just pushes the counters
+# off screen. It is a one-shot on purpose: re-run it (or `!!`) rather than sit
+# in a full-screen loop for four numbers that move once a minute.
+hstat() {
+  local job="${1:-$HISTER_JOB}"
+  hister crawl show "$job" | sed -n '/STATE/,/^$/p' | bat --color=always --paging=never --file-name="$job" -l log
+}
+
+# --- hister reindex ------------------------------------------------------
+# The reindex CLIENT is silent: `hister reindex` writes to its own stdout only
+# when the whole rebuild finishes, so /tmp/hister-reindex.log stays at 0 bytes
+# for the entire run. All live progress comes from the SERVER, which logs a
+# "Reindexed [N/total]" line to the journal every 50 documents, alongside
+# per-document extraction failures. These helpers read the journal, not the log.
+HREINDEX_UNIT="${HREINDEX_UNIT:-hister.service}"
+
+# Live follow: progress counters and extraction failures as they happen.
+hrlog() {
+  journalctl --user -u "$HREINDEX_UNIT" -f -o cat \
+    | grep --line-buffered -E "Reindexed \[|Failed to extract|ERROR"
+}
+
+# Coloured snapshot of the last N matching lines.
+hrlogc() {
+  local n="${1:-40}"
+  journalctl --user -u "$HREINDEX_UNIT" --no-pager -o cat -n 20000 \
+    | grep -E "Reindexed \[|Failed to extract|ERROR" | tail -n "$n" \
+    | bat -l log --color=always --paging=always --file-name="$HREINDEX_UNIT"
+}
+
+# One-shot: current count, rate, ETA, and extraction failure count.
+#
+# Everything is scoped to THIS run. The journal accumulates, so a naive
+# "first Reindexed line" reaches back into the previous session's reindex and
+# yields a nonsense rate; and "-n 20000" for the failure count silently includes
+# every prior run's warnings. The run's start is taken from the client process
+# start time, which is exact and needs no guessing from log content.
+hrstat() {
+  local u="${1:-$HREINDEX_UNIT}" pid since prog d0 d1 t0 t1 c0 c1 tot
+  local rate eta warns
+  local -a since_arg
+
+  pid=$(pgrep -f 'hister reindex' | head -1)
+  if [[ -n "$pid" ]]; then
+    since=$(date -d "$(ps -o lstart= -p "$pid" 2>/dev/null)" +"%Y-%m-%d %H:%M:%S" 2>/dev/null)
+  else
+    since=""
+  fi
+  # Must be an array: zsh does not word-split unquoted expansions, so
+  # ${since:+--since "$since"} reaches journalctl as ONE argument and --since
+  # silently matches nothing.
+  [[ -n "$since" ]] && since_arg=(--since "$since")
+
+  prog=$(journalctl --user -u "$u" --no-pager -o short-unix \
+    "${since_arg[@]}" 2>/dev/null | grep -E "Reindexed \[")
+  if [[ -z "$prog" ]]; then
+    print -r -- "STATE  no 'Reindexed [N/total]' lines yet in $u"
+    return
+  fi
+
+  # zsh parameter expansion cannot do this -- "*Reindexed [" is a bad pattern
+  # because "[" opens a character class -- and [[ =~ ]] mis-parses the escaped
+  # bracket here, leaving c1/tot empty and dividing by zero. sed is unambiguous.
+  d1=$(print -r -- "$prog" | tail -1)
+  read -r c1 tot <<< "$(print -r -- "$d1" | sed -nE 's/.*Reindexed \[([0-9]+)\/([0-9]+)\].*/\1 \2/p')"
+  if [[ -z "$c1" || -z "$tot" || "$tot" -eq 0 ]]; then
+    print -r -- "STATE  could not parse a 'Reindexed [N/total]' line"
+    return
+  fi
+  print -r -- "STATE  $c1 / $tot  ($(( c1 * 100 / tot ))%)"
+
+  if [[ -n "$pid" ]]; then
+    print -r -- "PROC   running (pid $pid, up $(( $(ps -o etimes= -p "$pid" | tr -d ' ') / 60 ))m)"
+  else
+    print -r -- "PROC   idle -- no 'hister reindex' process"
+  fi
+
+  # Rate from a RECENT window (last 6 counters, ~250 docs), not the whole run:
+  # a long average hides the fact that early extraction-heavy documents are far
+  # slower than later ones.
+  d0=$(print -r -- "$prog" | tail -6 | head -1)
+  c0=$(print -r -- "$d0" | sed -nE 's/.*Reindexed \[([0-9]+)\/.*/\1/p')
+  t0=${d0%%.*}; t1=${d1%%.*}
+  if [[ -n "$c0" && "$c1" != "$c0" && "$t1" != "$t0" ]]; then
+    rate=$(( (c1 - c0) * 60 / (t1 - t0) ))
+    print -r -- "RATE   ~${rate} docs/min  (last $(( c1 - c0 )) docs)"
+    if [[ $rate -gt 0 ]]; then
+      eta=$(( (tot - c1) * 60 / rate ))
+      print -r -- "ETA    ~$(( eta / 60 ))m $(( eta % 60 ))s"
+    fi
+  fi
+
+  warns=$(journalctl --user -u "$u" --no-pager -o cat \
+    "${since_arg[@]}" 2>/dev/null | grep -c "Failed to extract")
+  print -r -- "FAILS  $warns extraction failures this run"
+}
 
 # zsh-syntax-highlighting MUST be sourced last. It walks the widget list once
 # at source time and wraps each widget; anything that registers a ZLE widget
