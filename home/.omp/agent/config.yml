@@ -300,6 +300,6 @@ isolation:
   backend: auto
 astEdit:
   enabled: true
-hideThinkingBlock: true
+hideThinkingBlock: false
 hindsight:
   recallBudget: high
