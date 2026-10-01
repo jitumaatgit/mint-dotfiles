@@ -5,7 +5,7 @@
 `stow` is a lightweight package manager that creates **symbolic links** from a *source directory* (here `./home/`) to a *target directory* (usually `$HOME`).
 
 * **Single source of truth** – all configuration files live in the repository; the symlinks in `~` simply point to them.
-* **Atomic deployment** – `stow -t ~ -d ~/mint-dotfiles home` creates/moves all pipes in one step.
+* **Atomic deployment** – `stow --no-folding -t ~ -d ~/mint-dotfiles home` creates every link in one step. `--no-folding` matters: without it a fresh machine (no `~/.config` yet) gets `~/.config` as a single directory symlink into the repo, so all app writes and runtime state land there. See ADR-0004.
 * **Undo/rollback** – `stow -D -t ~ home` removes the symlinks cleanly. (`-R` is *restow*, not rollback: it re-applies the package, replacing existing links.)
 
 Use it when:
@@ -38,7 +38,7 @@ Do *not* use `stow` for temporary or runtime files (caches, fonts, runtime state
 
 | Utility | Purpose | When to Run |
 |---------|---------|-------------|
-| `install.sh` | Create or restore the `$HOME` symlink tree from `./home/`. | First‑time setup or after a major change to the repo layout. |
+| `install.sh` | Create or restore the `$HOME` symlink tree from `./home/`, file by file (`--no-folding`). | First‑time setup or after a major change to the repo layout. |
 | `sync-from-home.sh` | Pull **git-tracked** files under `home/` back from `$HOME`, using rsync `-aL`. Untracked files are never swept in. | After editing a file that lives in `$HOME`. |
 | `dotsync` alias | Convenience wrapper: `cd ~/mint-dotfiles && ./sync-from-home.sh && git diff`. | After you modify a stowed file and want to review changes before committing. |
 | `home/.config/nvim/lua/config/autocmds.lua` | `BufWritePost` on `*/mint-dotfiles/home/**` → "run :!dotsync". | During development – ensures you remember to `dotsync`. |
@@ -59,7 +59,7 @@ Do *not* use `stow` for temporary or runtime files (caches, fonts, runtime state
    ```
 4. **Keep the symlink tree up‑to‑date** if you have added new files under `home/` (e.g. from a `stow --adopt` operation):
    ```bash
-   stow -R -t ~ -d "~/mint-dotfiles" home
+   stow --no-folding -R -t ~ -d "~/mint-dotfiles" home
    ```
 5. **Re‑run the helper scripts** yourself after editing them. Nothing sources `install.sh` or `sync-from-home.sh`, so a saved change to either takes effect on the *next* invocation, not automatically.
 
@@ -77,9 +77,9 @@ Do *not* use `stow` for temporary or runtime files (caches, fonts, runtime state
 
 ## 6. Extending the Setup
 
-* **Custom modules** – add a new directory under `home/` and `stow` it.
+* **Custom modules** – add a new directory under `home/` and it deploys with the rest. It will not appear in `$HOME` until a `stow -R` run; `sync-from-home.sh` reports tracked‑but‑absent paths as "repo‑only".
 * **Hooks** – place a `.git/hooks/pre-commit` script to enforce commit conventions.
-* **Documentation** – keep reading `AGENTS.md`, `CONTEXT.md`, and the overarching `README.md` for more background.
+* **Documentation** – keep reading `AGENTS.md`, `CONTEXT.md`, the `README.md`, and `docs/adr/` for decisions that constrain the setup.
 
 ---
 

@@ -34,8 +34,10 @@ Versions everything in `$HOME` this repo does not own. No remote by design. Full
 
 - `-R` restows (re-applies the package), `-D` unstows, `-d` is `--dir`. Only `-D` removes links.
 - Files added under `home/` are not deployed until `stow -R` runs. `sync-from-home.sh` reports tracked-but-absent paths as "repo-only".
-- `home/.omp/.gitignore` is the one tracked-but-undeployed file. Nothing enforces that — there is no `.stow-local-ignore` in the repo, so `./install.sh` on a fresh machine can symlink it into `$HOME/.omp/`.
-- Do not put `AGENTS.md` (or any file that does not belong in `$HOME`) under `home/` — stow links the whole package, so it would appear as `~/AGENTS.md`.
+- `install.sh` passes `--no-folding`; do not remove it. stow's default folds a whole directory into one symlink when the target lacks it, so a fresh machine would get `~/.config` pointing at the repo — every app write and all runtime state would land there, and deleting the repo would dangle `$HOME`. Per-file linking (2177 links, not 9) matches the layout this machine already has. ADR-0004.
+- stow never links `.gitignore` files, so `home/.omp/.gitignore` is unreachable and inert. Kept only as defence in depth for hand-run plain stow.
+- Do not put `AGENTS.md` (or any file that does not belong in `$HOME`) under `home/` — stow links every file in the package, so it would appear as `~/AGENTS.md`.
+- Verify stow changes in a throwaway `$HOME`, not `stow -nv`. The dry run lists links; it does not show where a later write lands, nor that git refuses to traverse a symlinked directory (`fatal: pathspec ... is beyond a symbolic link`, exit 128 — which reads as "not ignored" if you test with `if`).
 
 ### Companion repos
 

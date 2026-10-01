@@ -16,7 +16,16 @@ if ! command -v stow &>/dev/null; then
 fi
 
 echo "📦 Symlinking dotfiles from $REPO_ROOT/home to $HOME"
-stow -t "$HOME" -d "$REPO_ROOT" home
+# --no-folding: link files individually instead of collapsing whole directories.
+# Without it, a fresh machine (where ~/.config does not yet exist) gets
+# ~/.config -> repo/home/.config as a single directory symlink. Then every
+# app writes its config straight into the repo, runtime state lands there too,
+# and deleting or moving the repo leaves $HOME dangling. With the flag, $HOME
+# keeps real directories containing symlinks -- which is the layout this
+# machine already has, because its directories predated the first stow run.
+# Verified with `stow -nv`: 9 links without, 2177 with, zero difference in
+# effect on an already-stowed machine.
+stow --no-folding -t "$HOME" -d "$REPO_ROOT" home
 
 # bat resolves custom themes from a compiled cache in $HOME/.cache/bat, and it
 # does NOT build that cache on first run. Without this, a fresh machine gets the

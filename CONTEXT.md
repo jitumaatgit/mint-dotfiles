@@ -26,15 +26,22 @@ same bytes for any stowed path.
 allowlist `sync-from-home.sh` uses. Untracked files under `home/` are never
 pulled back, which is deliberate: it keeps vendored checkouts and caches out.
 
-**repo-only file** — Tracked under `home/`, but with no counterpart in `$HOME`
-(e.g. `home/.omp/.gitignore`). `sync-from-home.sh` reports these rather than
-failing, because a repo-scoped ignore file is legitimate.
+**repo-only file** — Tracked under `home/` but never deployed to `$HOME`.
+`home/.omp/.gitignore` is the only one: stow excludes `.gitignore` files from
+linking, so it is reachable only by running plain stow by hand. It is kept as
+defence in depth, not as protection for the current layout.
 
 **`dotsync`** — Shell alias: `cd ~/mint-dotfiles && ./sync-from-home.sh &&
 git diff`. The standard review loop after touching anything under `$HOME`.
 
 **deployed / unstowed** — A file is *deployed* when its symlink exists in
 `$HOME`; *unstowed* after `stow -D`. Note `-R` does not undeploy: it restows.
+
+**folded** — stow's default: link a whole directory to the repo when that
+directory is absent from the target. **no-folding** — force per-file linking.
+`install.sh` always passes `--no-folding`, so `$HOME/.config`, `$HOME/.local`
+and `$HOME/.omp` are real directories containing symlinks, and only regular
+files become single links. Do not drop the flag — see ADR-0004.
 
 ## Boundaries
 
@@ -58,3 +65,5 @@ in the setup: if a file appears in both, you have lost it.
    this repo**. Tool edits therefore land here unprompted; an `M` on one of
    those paths may be a hotkey press, not a decision. Read the diff.
 4. `install.sh` must build the bat theme cache *after* stow, never before.
+5. Deployment must work with `--no-folding` alone. Do not introduce a
+   dependency on directory-level links.
