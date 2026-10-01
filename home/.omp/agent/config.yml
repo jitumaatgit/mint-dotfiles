@@ -148,6 +148,9 @@ tools:
     enabled: false
     maxInFlight: 1
   maxTimeout: 600
+  xdevDocs: builtins
+  xdevInlineDevices:
+    - mcp*
 error:
   notify: "on"
 recap:
@@ -195,7 +198,7 @@ github:
   enabled: true
 inlineToolDescriptors: "on"
 bashInterceptor:
-  enabled: false
+  enabled: true
 task:
   batch: true
   maxConcurrency: 32
@@ -297,4 +300,6 @@ isolation:
   backend: auto
 astEdit:
   enabled: true
-hideThinkingBlock: false
+hideThinkingBlock: true
+hindsight:
+  recallBudget: high
