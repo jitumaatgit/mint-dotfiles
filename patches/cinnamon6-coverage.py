@@ -49,6 +49,7 @@ safe to wire into ./smoke.sh on a machine that has neither.
 import argparse
 import os
 import re
+import signal
 import sys
 from pathlib import Path
 
@@ -154,6 +155,9 @@ def family(head: str) -> str:
 
 
 def main() -> int:
+    # Behave like a normal CLI when piped into head/less.
+    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--gate", action="store_true",
                     help="exit 1 on any gap outside the exclusion list (default: report only)")
@@ -168,22 +172,36 @@ def main() -> int:
             print(f"error: {what} stylesheet not found at {path}", file=sys.stderr)
             return 2
 
-    default_heads = {collapse(h) for h in selector_heads(strip_noise(CINNAMIN_CSS.read_text(errors="ignore")))}
-    theme_heads = {collapse(h) for h in selector_heads(strip_noise(THEME_CSS.read_text(errors="ignore")))}
+    default_raw = selector_heads(strip_noise(CINNAMIN_CSS.read_text(errors="ignore")))
+    theme_raw = selector_heads(strip_noise(THEME_CSS.read_text(errors="ignore")))
+    default_heads = {collapse(h) for h in default_raw}
+    theme_heads = {collapse(h) for h in theme_raw}
 
+    # Two different questions, and they need two different sets.
+    #
+    # Collapsed answers "how many widgets are unstyled" -- the size of the job.
+    # Exact answers "which selectors do I still have to write" -- the work
+    # itself. They are not the same question and the port needs both: a widget
+    # themed at rest but not on hover counts as covered by the first and as
+    # still-to-do by the second, which is exactly right, because the hover
+    # state genuinely still falls through to the dark fallback.
     gaps = sorted(default_heads - theme_heads)
+    exact_gaps = sorted(default_raw - theme_raw)
+
     excluded_fams = sorted({family(g) for g in gaps if family(g) in EXCLUDED})
-    blocking = [g for g in gaps if family(g) not in EXCLUDED]
+    blocking = [g for g in exact_gaps if family(g) not in EXCLUDED]
 
     by_family: dict[str, list[str]] = {}
     for g in blocking:
         by_family.setdefault(family(g), []).append(g)
 
     if not args.quiet:
-        print(f"Cinnamon selector heads : {len(default_heads)}")
-        print(f"Chicago95 selector heads: {len(theme_heads)}")
-        print(f"Unstyled                : {len(gaps)}"
-              f" ({len(blocking)} in scope, {len(gaps) - len(blocking)} excluded)\n")
+        print(f"Cinnamon selectors      : {len(default_raw)} raw, {len(default_heads)} widgets")
+        print(f"Chicago95 selectors     : {len(theme_raw)} raw, {len(theme_heads)} widgets")
+        in_scope_widgets = len([g for g in gaps if family(g) not in EXCLUDED])
+        print(f"Unstyled widgets        : {len(gaps)} ({in_scope_widgets} in scope)")
+        print(f"Unstyled selectors to write: {len(exact_gaps)}"
+              f" ({len(blocking)} in scope)\n")
         for fam in sorted(by_family, key=lambda f: -len(by_family[f])):
             print(f"  {len(by_family[fam]):4}  {fam}")
             for g in sorted(by_family[fam]):
@@ -194,9 +212,9 @@ def main() -> int:
                 print(f"          {fam:24} {EXCLUDED[fam]}")
 
     if args.gate and blocking:
-        print(f"\nFAIL: {len(blocking)} unstyled selector head(s) in scope.", file=sys.stderr)
+        print(f"\nFAIL: {len(blocking)} unstyled selector(s) in scope.", file=sys.stderr)
         return 1
-    print(f"\n{'PASS' if args.gate else 'OK'}: {len(blocking)} unstyled head(s) in scope.")
+    print(f"\n{'PASS' if args.gate else 'OK'}: {len(blocking)} selector(s) still to write.")
     return 0
 
 
