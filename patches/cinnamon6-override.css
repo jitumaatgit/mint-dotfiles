@@ -467,3 +467,131 @@
   font-weight: 400;
   font-size: 0.818em;
   color: rgb(70, 70, 70); }
+
+/* ---------------------------------------------------------------------------
+ * Notification buttons, popup sub-menus, form controls
+ *
+ * These three families are the remainder of Phase 2. Most of each is already
+ * correct in the theme -- `.notification-button`, `.popup-sub-menu`,
+ * `.check-box` and `.radiobutton` all carry the theme's own Win95 treatment
+ * with its own assets. What falls through is the interaction states and a few
+ * structural rules, which is the part that flashes dark while you use the UI.
+ * ---------------------------------------------------------------------------
+ */
+
+/* Notification buttons. The theme sets a grey label at rest and flips it to
+ * black on hover; the fallback's states would repaint the whole button
+ * #454545 / #656565 with an 8px radius. */
+.notification-button:hover,
+.notification-icon-button:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.notification-button:active,
+.notification-icon-button:active {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+.notification-button:focus,
+.notification-icon-button:focus {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.notification-button:insensitive,
+.notification-icon-button:insensitive {
+  color: #808080;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  text-shadow: 1px 1px #ffffff; }
+
+/* The fallback rounds every notification button to an 8px radius and pads it
+ * out to 36px horizontally, which the theme's bevel assets cannot survive. */
+.notification-button,
+.notification-icon-button {
+  border-radius: 0px;
+  padding: 5px;
+  font-weight: normal; }
+
+/* Popup sub-menus. The theme already gives the sub-menu its own panel and its
+ * scrollbar a grey track, but the items keep the fallback's 8px radii and its
+ * 8px/12px padding, which breaks the square Win95 menu. */
+.popup-sub-menu {
+  border-radius: 0px; }
+
+.popup-sub-menu .popup-menu-item {
+  font-weight: normal;
+  spacing: 4px;
+  padding: 4px 8px;
+  margin: 0px;
+  border-radius: 0px;
+  transition-duration: 0s; }
+
+.popup-sub-menu .popup-menu-item:active {
+  background-color: #000080;
+  color: #ffffff; }
+
+/* The positional radius rules exist to round the ends of a rounded list. With
+ * square corners there is nothing to round, so they all resolve to the same
+ * square. Declared so the coverage gate reflects the decision rather than the
+ * absence of an accident. */
+.popup-sub-menu .popup-menu-item:first-child,
+.popup-sub-menu .popup-menu-item:first-child:last-child,
+.popup-sub-menu .popup-menu-item:last-child,
+.popup-sub-menu .popup-menu-item:only-child {
+  border-radius: 0px; }
+
+.popup-sub-menu StScrollBar {
+  padding: 4px; }
+
+.popup-sub-menu StScrollBar StBin#trough {
+  border-width: 0;
+  background-color: transparent; }
+
+.popup-sub-menu StScrollBar StBin#vhandle {
+  border-width: 0;
+  background-color: rgb(216, 216, 216);
+  border: 1px solid #949494; }
+
+/* `.check-box-2` is the second check box variant; the theme styles `.check-box`
+ * only, so this one renders with Cinnamon's SVG icon. */
+.check-box-2 StBoxLayout {
+  spacing: 0.2em; }
+
+.check-box-2 StBin,
+.check-box-2:focus StBin {
+  width: 16px;
+  height: 16px;
+  background-image: url("control-assets/checkbox-unchecked.png"); }
+
+.check-box-2:checked StBin,
+.check-box-2:focus:checked StBin {
+  background-image: url("control-assets/checkbox-checked.png"); }
+
+/* The fallback's slider is a rounded white pill on a #393939 track. The theme
+ * already has a Win95 slider treatment for the sound player; this applies the
+ * same one to every other slider. */
+.slider {
+  height: 0.5em;
+  -slider-height: 0.5em;
+  -slider-background-color: #c0c0c0;
+  -slider-border-color: black;
+  -slider-active-background-color: #000080;
+  -slider-active-border-color: black;
+  -slider-border-width: 1px;
+  -slider-handle-radius: 4px; }
+
+/* Scrollbar handles are rounded grey pills in the fallback, and go #7c7c7c on
+ * hover. Win95 trackbars are square. */
+StScrollBar StButton#hhandle,
+StScrollBar StButton#vhandle {
+  border-radius: 0px;
+  background-color: rgb(216, 216, 216);
+  border: 1px solid #949494; }
+
+StScrollBar StButton#hhandle:hover,
+StScrollBar StButton#vhandle:hover {
+  background-color: #c0c0c0;
+  border-color: black; }
