@@ -380,3 +380,90 @@
   border-bottom: 1px solid rgb(70, 70, 70);
   padding: 9px;
   margin: 4px 0; }
+
+/* ---------------------------------------------------------------------------
+ * Run dialog (Alt+F2) and prompt dialog
+ *
+ * Both inherit the themed `.dialog` frame from the block above. What leaks is
+ * the text entry: the fallback draws it as a rounded dark pill with white text,
+ * a white caret and a bright blue selection. The theme's own StEntry idiom
+ * (`.menu StEntry`, `#notification StEntry`) is a white sunken field with
+ * black text, a black caret and navy selection, so these follow it.
+ * ---------------------------------------------------------------------------
+ */
+
+.run-dialog .dialog-content-box {
+  margin: 4px; }
+
+.run-dialog-completion-box {
+  padding-top: 6px;
+  padding-left: 12px; }
+
+.run-dialog-description {
+  font-weight: 400;
+  font-size: 0.818em;
+  color: rgb(70, 70, 70); }
+
+/* The fallback's red error text is the one place a saturated colour is right,
+ * so it is kept -- darkened just enough to sit on the theme's grey. */
+.run-dialog-description.error {
+  color: #b03020; }
+
+.run-dialog-entry,
+.prompt-dialog-password-entry {
+  min-height: 22px;
+  padding: 4px 6px;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("misc-assets/entry.png") 6;
+  background-color: white;
+  color: black;
+  caret-color: black;
+  caret-size: 1px;
+  selected-color: white;
+  selection-background-color: #000080;
+  transition-duration: 150; }
+
+.run-dialog-entry:focus,
+.prompt-dialog-password-entry:focus {
+  border-image: url("misc-assets/entry.png") 6;
+  background-color: white;
+  color: black;
+  transition-duration: 150; }
+
+.run-dialog-entry:insensitive,
+.prompt-dialog-password-entry:insensitive {
+  background-color: rgb(236, 236, 236);
+  color: rgb(140, 140, 140); }
+
+/* Placeholder, caps-lock badge and the peek-password eye are all styled for a
+ * dark field; on a white one they have to be dark. */
+.run-dialog-entry StLabel.hint-text,
+.prompt-dialog-password-entry StLabel.hint-text {
+  color: rgb(128, 128, 128); }
+
+.run-dialog-entry StIcon.peek-password,
+.prompt-dialog-password-entry StIcon.peek-password {
+  icon-size: 16px;
+  color: black; }
+
+.run-dialog-entry .capslock-warning,
+.prompt-dialog-password-entry .capslock-warning {
+  icon-size: 1.091em; }
+
+.prompt-dialog {
+  width: 26em; }
+
+.prompt-dialog .dialog-content-box {
+  spacing: 16px;
+  margin-bottom: 12px; }
+
+.prompt-dialog-password-layout {
+  spacing: 8px; }
+
+.prompt-dialog-null-label,
+.prompt-dialog-info-label,
+.prompt-dialog-error-label {
+  font-weight: 400;
+  font-size: 0.818em;
+  color: rgb(70, 70, 70); }
