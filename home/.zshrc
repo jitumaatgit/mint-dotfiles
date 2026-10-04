@@ -32,6 +32,20 @@ done
 VI_MODE_RESET_PROMPT_ON_MODE_CHANGE=false
 VI_MODE_SET_CURSOR=true
 
+# `kj` in insert mode -> normal mode (vim's jk). vi-mode only binds ESC/^[
+# out of the box. main and viins are the same keymap under `bindkey -v`, so
+# binding both is belt-and-braces, not two separate maps.
+#
+# The cost, per plugins/vi-mode/README.md#low-keytimeout: once `kj` is a
+# binding, a BARE `k` in insert mode has to wait out $KEYTIMEOUT to see
+# whether a `j` follows. The default (1) is 10ms -- too short for two human
+# keystrokes to ever register as one. 20 is the compromise: fast enough to
+# hit, and a lone `k` stalls 200ms. Raise it if `kj` is flaky, lower it if
+# typing `k` feels laggy -- you cannot have both.
+KEYTIMEOUT=20
+bindkey -M main 'kj' vi-cmd-mode
+bindkey -M viins 'kj' vi-cmd-mode
+
 HISTFILE="$HOME/.zsh_history"
 HISTSIZE=10000
 SAVEHIST=10000
