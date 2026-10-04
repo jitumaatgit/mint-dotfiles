@@ -62,10 +62,16 @@ THEME_CSS = Path(
     )
 )
 
-# Families deliberately not ported, and why. An on-screen keyboard is the one
-# thing on this list a desktop user has no reason to open.
+# Families deliberately not ported, and why.
+#
+# `menu-` is not a deferral, it is dead. Cinnamon 6.x's menu applet sets
+# `.appmenu-*`; nothing in the shipped Cinnamon sets the 3.x `.menu-*` names,
+# which its own default stylesheet nevertheless still carries. Writing rules
+# for them would be cargo-culting a rename in the other direction, so they are
+# excluded explicitly rather than silently left to fail the gate.
 EXCLUDED = {
     "vkeyboard": "on-screen keyboard; excluded by agreement (issue #1)",
+    "menu-": "Cinnamon 3.x menu class names; no widget sets these any more",
 }
 
 # Interaction states that do not create a new widget head.

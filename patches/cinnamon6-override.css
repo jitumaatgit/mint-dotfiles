@@ -1009,3 +1009,121 @@ StScrollBar StButton#vhandle:hover {
 
 .sound-player StButton:small StIcon {
   icon-size: 1.2em; }
+
+/* ---------------------------------------------------------------------------
+ * The rest of the menu applet
+ *
+ * The `.appmenu-*` names below are the remaining ones Phase 1 did not reach.
+ * Most are pure geometry and matter little; the ones that show are the
+ * avatar, which the fallback rounds into a 99px circle with a white ring, and
+ * the search entry's hint and peek-password glyphs, which are styled for a
+ * dark field and sit on the white one.
+ * ---------------------------------------------------------------------------
+ */
+
+.user-icon StIcon {
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 0px; }
+
+.user-icon StIcon.highlighted {
+  border: 1px solid #000080;
+  border-radius: 0px; }
+
+.user-icon.user-avatar {
+  border-color: transparent;
+  border-radius: 0px; }
+
+.user-widget.horizontal,
+.user-widget.vertical {
+  spacing: 6px; }
+
+.appmenu-background .popup-menu-content {
+  padding: 0px; }
+
+.appmenu-main-box {
+  spacing: 10px; }
+
+.appmenu-right-box {
+  spacing: 5px;
+  padding: 10px 10px; }
+
+.appmenu-search-box {
+  spacing: 10px; }
+
+.appmenu-search-entry-icon {
+  icon-size: 1.091em; }
+
+.appmenu-categories-applications-box {
+  spacing: 15px; }
+
+.appmenu-categories-applications-box:top {
+  padding-top: 5px; }
+
+.appmenu-applications-box {
+  padding-right: 5px; }
+
+.appmenu-category-button-label,
+.appmenu-application-button-label {
+  padding: 0px; }
+
+.appmenu-category-button-greyed StIcon {
+  opacity: 0.5; }
+
+.appmenu-application-button:highlighted,
+.appmenu-application-button-selected:highlighted {
+  font-weight: bold; }
+
+/* The search entry is a white sunken field, so its placeholder and
+ * peek-password glyph have to be dark rather than the fallback's white. */
+#appmenu-search-entry StLabel.hint-text,
+.expo-workspaces-name-entry StLabel.hint-text {
+  color: rgb(128, 128, 128); }
+
+#appmenu-search-entry StIcon.peek-password,
+.expo-workspaces-name-entry StIcon.peek-password {
+  icon-size: 16px;
+  color: black; }
+
+.caps-lock-warning-label,
+.expo-workspaces-name-entry .capslock-warning {
+  font-weight: 400;
+  font-size: 0.818em;
+  icon-size: 1.091em; }
+
+/* The expo rename field. */
+.expo-workspaces-name-entry:insensitive {
+  background-color: rgb(236, 236, 236);
+  color: rgb(140, 140, 140); }
+
+/* ---------------------------------------------------------------------------
+ * Device and separator surfaces
+ * ---------------------------------------------------------------------------
+ */
+
+.device-box .device-icon {
+  padding: 4px; }
+
+.device-box .device-labels {
+  spacing: 2px; }
+
+.device-box .device-labels .primary-label {
+  font-weight: bold;
+  color: black; }
+
+.device-box .device-labels .status-label {
+  font-weight: 400;
+  font-size: 0.818em;
+  color: rgb(70, 70, 70); }
+
+.popup-device-menu-item:insensitive {
+  color: rgb(140, 140, 140); }
+
+.popup-device-menu-item .popup-inactive-menu-item {
+  color: rgb(140, 140, 140); }
+
+.desklet:highlight {
+  background-color: rgba(0, 0, 128, 0.35); }
+
+.ripple-pointer-location {
+  background-color: rgba(0, 0, 128, 0.25); }
