@@ -595,3 +595,115 @@ StScrollBar StButton#hhandle:hover,
 StScrollBar StButton#vhandle:hover {
   background-color: #c0c0c0;
   border-color: black; }
+
+/* ---------------------------------------------------------------------------
+ * Panel, corner bars, spacers, launchers, tray
+ *
+ * The panel background is NOT already correct. The theme paints `.panel-top` /
+ * `.panel-bottom` / `.panel-left` / `.panel-right` with `background-color:
+ * #c0c0c0`, but those are the outer panel containers and on Cinnamon 6.6 they
+ * do not paint. The visible surface is the three inner boxes, which the theme
+ * leaves alone, so the panel renders as a translucent dark overlay on the
+ * wallpaper -- measured as rgba(0,0,0,0.4) over teal, i.e. (0,77,77) instead
+ * of (192,192,192).
+ *
+ * That was established by probe, not assumption. `background-color` on
+ * `.panel-top`, `#panel`, `.panel-left` and `.panel-right` had no visible
+ * effect, while `font-size` on the same `#panel` rule did -- the clock rendered
+ * at 40pt -- so the selector was matching and the property specifically was
+ * being ignored. Painting `#panelLeft` / `#panelCenter` / `#panelRight`
+ * magenta turned the entire panel magenta, identifying them as the real
+ * surface. The `panel-*.png` bevels stay on the containers.
+ *
+ * Also worth knowing: Cinnamon 6.6 sets both `name:` and `style_class:` on the
+ * same box (js/ui/panel.js:2127), so `#panelLeft` and `.panelLeft` both match
+ * and the theme's id rules outrank the fallback's class rules. That is why the
+ * fallback's red/green/blue dnd tints never show and are not overridden below.
+ *
+ * What else leaks is the furniture around the applets.
+ */
+
+#panelLeft,
+#panelCenter,
+#panelRight {
+  background-color: #c0c0c0; }
+
+/* A launcher flashing #454545 on hover, on a #c0c0c0 panel, is the single
+ * most visible remaining dark artefact in normal use. */
+.panel-launchers .launcher:hover {
+  color: black;
+  background-color: transparent;
+  border-radius: 0px;
+  border-image: url("panel-assets/hover-1.png") 6; }
+
+.panel-launchers {
+  spacing: 2px; }
+
+.panel-launchers.vertical {
+  padding: 2px 0px; }
+
+.panel-launchers.vertical .launcher {
+  padding: 2px 0px; }
+
+/* The corner bar is a 8px #454545 block sitting on the grey panel. */
+.applet-cornerbar {
+  width: 8px;
+  background-color: #c0c0c0;
+  border: 0px;
+  border-image: url("panel-assets/separator_h.png") 3; }
+
+.applet-cornerbar.vertical {
+  height: 8px; }
+
+.applet-cornerbar-box {
+  background: none; }
+
+.applet-cornerbar-box:hover > .applet-cornerbar {
+  background-color: transparent;
+  border-image: url("panel-assets/pressed.png") 3; }
+
+/* Drag-and-drop highlights. The fallback paints a coral block; the theme uses
+ * navy for everything it wants to draw the eye to. */
+#panel:highlight,
+.spacer-box:highlight {
+  background-color: rgba(0, 0, 128, 0.35); }
+
+.spacer-box {
+  border: 1px solid transparent; }
+
+.spacer-box.edit-mode {
+  border: 1px symbolic; }
+
+/* Workspace switcher padding inside a panel. */
+.panel-top .workspace-switcher,
+.panel-bottom .workspace-switcher {
+  padding: 0 4px; }
+
+/* Separators. The theme has a horizontal one; the vertical variant and the
+ * generic `.separator` are unstyled and fall back to a #333333 gradient,
+ * which is too dark against the panel. */
+.applet-separator {
+  padding: 1px 4px; }
+
+.applet-separator.vertical {
+  padding: 4px 1px; }
+
+.applet-separator-line-vertical {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.2); }
+
+.separator {
+  -gradient-height: 1px;
+  -gradient-start: #808080;
+  -gradient-end: #808080;
+  -margin-horizontal: 0;
+  height: 1px; }
+
+/* The theme sets `.applet-separator-line` to nothing at all, which leaves the
+ * fallback's 1px white line in place -- correct, but only by accident. */
+.applet-separator-line {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.2); }
+
+.systray {
+  padding: 0px; }
