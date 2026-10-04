@@ -175,3 +175,71 @@
   caret-size: 1px;
   selected-color: white;
   selection-background-color: #000080; }
+/* ---------------------------------------------------------------------------
+ * Modal dialogs
+ *
+ * The theme already has a complete Win95 dialog treatment, filed under the
+ * names Cinnamon used when it was written: `.modal-dialog`,
+ * `.modal-dialog-button`, `.modal-dialog-button-box`. Cinnamon 6.x renamed
+ * those to `.dialog`, `.dialog-button` and `.dialog-button-box`. Nothing in
+ * the current Cinnamon sets the old names, so the theme's dialog styling is
+ * dead code and every dialog renders entirely from the fallback: #242424,
+ * 18px radius, white text, #393939 buttons.
+ *
+ * These blocks reproduce the theme's own treatment under the current names,
+ * using the theme's own assets. Nothing new is invented here.
+ * ---------------------------------------------------------------------------
+ */
+
+.dialog {
+  font-size: 10pt;
+  border-radius: 0px;
+  border: 0px;
+  border-image: url("background-assets/menu.png") 6;
+  background-color: transparent;
+  color: rgb(70, 70, 70);
+  padding: 20px; }
+
+.dialog .dialog-content-box {
+  margin-top: 8px;
+  margin-bottom: 16px;
+  spacing: 32px;
+  max-width: 28em; }
+
+.dialog .confirm-dialog-title {
+  font-weight: 800;
+  font-size: 1.364em;
+  text-align: center; }
+
+.dialog-button-box {
+  spacing: 110px;
+  padding-top: 20px; }
+
+/* The dialog list is used by the end-session picker and the network prompt.
+ * The fallback paints item descriptions #f2f2f2, unreadable on the theme grey. */
+.dialog-list {
+  spacing: 18px; }
+
+.dialog-list .dialog-list-box {
+  spacing: 1em; }
+
+.dialog-list .dialog-list-box .dialog-list-item {
+  spacing: 1em; }
+
+.dialog-list .dialog-list-box .dialog-list-item .dialog-list-item-title {
+  font-weight: bold;
+  color: black; }
+
+.dialog-list .dialog-list-box .dialog-list-item .dialog-list-item-description {
+  font-weight: 400;
+  font-size: 0.818em;
+  color: rgb(70, 70, 70); }
+
+.dialog-list .dialog-list-scrollview {
+  max-height: 200px; }
+
+.dialog-list .dialog-list-title {
+  font-weight: 700;
+  font-size: 1em;
+  text-align: center;
+  color: black; }
