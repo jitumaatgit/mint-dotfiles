@@ -1,0 +1,177 @@
+/* Chicago95 - Cinnamon 6.x selector port
+ * ===================================
+ *
+ * MANAGED ARTIFACT. Do not edit the copy inside the theme directory.
+ * Edit this file, then re-run:
+ *
+ *     patches/apply-cinnamon6-override.sh
+ *
+ * The applier wraps this block in sentinel markers when it appends it to the
+ * theme's Cinnamon stylesheet. --revert cuts exactly between the markers, and
+ * --check reports whether the live file is currently in sync with this one.
+ *
+ * WHY THESE RULES HAVE TO LIVE HERE
+ *
+ * Cinnamon exposes no user stylesheet override. When it builds a theme it sets
+ * one user stylesheet path, taken from org.cinnamon.theme name, and gives that
+ * stylesheet Cinnamon's own stock stylesheet as its fallback:
+ *
+ *     new St.Theme({ fallback_stylesheet: /usr/share/cinnamon/theme/cinnamon.css })
+ *     theme.load_stylesheet(<theme dir>/cinnamon/cinnamon.css)
+ *
+ * That fallback is a DARK stylesheet (#1a1a1a panels, #242424 popups, #303030
+ * menu sidebar, 8/16/9999px radii). Every selector the theme does not declare
+ * resolves against it. Chicago95's stylesheet was written against the Cinnamon
+ * 3.x menu, so this block re-declares the current selector names in Win95 terms
+ * using the theme's own assets.
+ *
+ * The theme directory is deliberately excluded from home-git - it holds tens of
+ * thousands of static assets and makes snapshots unusably slow - which is why
+ * these rules cannot simply live there unversioned. See issue #1.
+ *
+ * CONVENTIONS
+ *
+ * Palette and artwork are reused from the theme; nothing new is introduced.
+ * Square corners, #c0c0c0 face, #000080 selection, white selected text, the
+ * theme's pressed asset for :active, its sunken asset for text fields. Adding
+ * a second visual language would make this read as a different theme.
+ *
+ * Ordering inside this file does not matter between families, but within a
+ * family, more specific selectors must come after less specific ones, because
+ * St resolves equal-specificity rules last-wins and this whole file relies on
+ * that.
+ *
+ * ---------------------------------------------------------------------------
+ */
+
+/* ---------------------------------------------------------------------------
+ * Menu applet
+ *
+ * Cinnamon 6.x renamed every menu class from `.menu-*` to `.appmenu-*`. Chicago95
+ * still declares the old names, so none of its menu styling is live and the
+ * whole menu falls through to the dark fallback. Current names are the source of
+ * truth in /usr/share/cinnamon/applets/menu@cinnamon.org/applet.js.
+ * ---------------------------------------------------------------------------
+ */
+.appmenu-category-button-greyed,
+.appmenu-category-button-selected,
+.appmenu-category-button,
+.appmenu-application-button-selected,
+.appmenu-application-button,
+.appmenu-sidebar-button {
+  border-radius: 0px;
+  color: black; }
+
+.appmenu-sidebar {
+  padding: 4px 0px;
+  background-color: #c0c0c0;
+  border-radius: 0px;
+  border-right: 2px solid transparent;
+  border-image: url("frame/frame.png") 6; }
+
+.appmenu-sidebar-user-box {
+  padding: 4px 0px; }
+
+.appmenu-sidebar-scrollbox {
+  padding: 0px; }
+
+.appmenu-places-box,
+.appmenu-favs-box {
+  padding: 0px; }
+
+/* The avatar is circular and the label is white in the fallback; Win95 has
+ * neither. */
+.user-icon {
+  border-radius: 0px; }
+
+.user-widget.vertical .user-widget-label {
+  color: black;
+  font-size: 9pt;
+  font-weight: normal; }
+
+.appmenu-sidebar-button {
+  padding: 2px 4px;
+  margin: 0px 6px; }
+
+.appmenu-sidebar-button:hover {
+  color: black;
+  background-color: #c0c0c0;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+/* Lock / Log out / Shut down render as dark pills, and Shut down as a red
+ * one. Flatten all three into Win95 buttons. */
+.appmenu-system-box {
+  spacing: 4px; }
+
+.appmenu-system-button,
+.appmenu-sidebar .appmenu-system-button,
+.appmenu-system-button-shutdown,
+.appmenu-sidebar .appmenu-system-button-shutdown {
+  padding: 4px;
+  color: black;
+  background-color: #c0c0c0;
+  border: 0px;
+  border-radius: 0px;
+  border-image: url("button-assets/button.png") 6; }
+
+.appmenu-system-button:hover,
+.appmenu-system-button-lock:hover,
+.appmenu-system-button-logout:hover,
+.appmenu-system-button-shutdown:hover,
+.appmenu-sidebar .appmenu-system-button:hover,
+.appmenu-sidebar .appmenu-system-button-lock:hover,
+.appmenu-sidebar .appmenu-system-button-logout:hover,
+.appmenu-sidebar .appmenu-system-button-shutdown:hover {
+  color: black;
+  background-color: #c0c0c0;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.appmenu-system-button:active,
+.appmenu-system-button-lock:active,
+.appmenu-system-button-logout:active,
+.appmenu-system-button-shutdown:active {
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+/* Selection is navy in Win95; the fallback uses a barely-visible dark grey. */
+.appmenu-category-button:hover,
+.appmenu-application-button:hover {
+  color: white;
+  background-color: #000080; }
+
+.appmenu-category-button-selected,
+.appmenu-application-button-selected {
+  color: white;
+  background-color: #000080;
+  font-weight: bold; }
+
+.appmenu-category-button-selected .appmenu-category-button-label,
+.appmenu-application-button-selected .appmenu-application-button-label,
+.appmenu-category-button:hover .appmenu-category-button-label,
+.appmenu-application-button:hover .appmenu-application-button-label,
+.appmenu-category-button:hover .appmenu-application-button-label {
+  color: white; }
+
+.appmenu-category-button-greyed {
+  color: #808080;
+  font-style: italic; }
+
+.appmenu-category-button-greyed .appmenu-category-button-label {
+  color: #808080; }
+
+/* Was #b2b2b2, which is unreadable on the grey application pane. */
+.appmenu-application-button-description {
+  color: #404040; }
+
+/* The fallback gives the search entry a dark pill with white text. */
+#appmenu-search-entry {
+  min-height: 20px;
+  padding: 2px;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("misc-assets/entry.png") 6;
+  background-color: white;
+  color: black;
+  caret-color: black;
+  caret-size: 1px;
+  selected-color: white;
+  selection-background-color: #000080; }
