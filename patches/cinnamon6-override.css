@@ -820,3 +820,192 @@ StScrollBar StButton#vhandle:hover {
  * while dragging a window. */
 .window-list-box:highlight {
   background-color: rgba(0, 0, 128, 0.35); }
+
+/* ---------------------------------------------------------------------------
+ * Workspace switcher, OSDs, sound player
+ *
+ * Note the theme contributes to the leak here rather than only being the
+ * victim of it: its own `.workspace-button:hover` is `background-color: #393939`
+ * and its `.sound-player-overlay` is `rgba(36,36,36,0.9)`. Both are dark-theme
+ * values left in a light theme.
+ * ---------------------------------------------------------------------------
+ */
+
+/* Workspace buttons. The fallback draws them as dark outlined pills. */
+.workspace-button {
+  border: 1px solid #808080;
+  border-radius: 0px;
+  color: black;
+  background-color: #c0c0c0; }
+
+.workspace-button:hover {
+  color: black;
+  background-color: #c0c0c0;
+  border-image: none;
+  border: 1px solid black; }
+
+.workspace-button:outlined {
+  color: white;
+  background-color: #000080;
+  border: 1px solid black; }
+
+.workspace-button:outlined:hover {
+  color: white;
+  background-color: #000080; }
+
+.workspace-button:shaded {
+  color: #808080;
+  background-color: #a0a0a0; }
+
+.workspace-graph {
+  padding: 4px;
+  spacing: 4px; }
+
+.workspace-thumbnails-background {
+  padding: 8px; }
+
+/* The volume OSD. The fallback's level bar is a white pill on a #303030 track
+ * with a 8px radius; Win95 has a sunken track and a square bar. */
+.media-keys-osd {
+  font-weight: bold;
+  font-size: 1.182em;
+  color: black; }
+
+.media-keys-osd > * {
+  spacing: 12px; }
+
+.media-keys-osd StIcon {
+  icon-size: 32px; }
+
+.media-keys-osd StLabel:ltr {
+  margin-right: 6px; }
+
+.media-keys-osd StLabel:rtl {
+  margin-left: 6px; }
+
+.media-keys-osd .level {
+  min-width: 160px;
+  -barlevel-height: 6px;
+  -barlevel-background-color: #c0c0c0;
+  -barlevel-active-background-color: #000080;
+  -barlevel-amplify-color: #808080;
+  -barlevel-amplify-separator-width: 3px;
+  -barlevel-border-color: black;
+  -barlevel-border-width: 1px; }
+
+.media-keys-osd .level-bar {
+  border-radius: 0px;
+  background-color: #c0c0c0;
+  border: 1px solid black; }
+
+.media-keys-osd .level:ltr {
+  margin-right: 6px; }
+
+.media-keys-osd .level:rtl {
+  margin-left: 6px; }
+
+/* The workspace-switch OSD draws a white capsule indicator that turns blue when
+ * held; Win95 draws a small sunken square. */
+.workspace-switch-osd {
+  font-weight: bold;
+  font-size: 1.182em;
+  color: black; }
+
+.workspace-switch-osd-indicator-box {
+  spacing: 12px; }
+
+.workspace-switch-osd-indicator {
+  background-color: #c0c0c0;
+  border: 1px solid black;
+  border-radius: 0px;
+  padding: 3px;
+  margin: 13px; }
+
+.workspace-switch-osd-indicator:active {
+  background-color: #000080;
+  padding: 5px;
+  margin: 11px; }
+
+/* The edge-resize overlay: a near-opaque near-black box in the fallback. */
+.resize-popup {
+  color: black;
+  background-color: #c0c0c0;
+  border: 2px solid transparent;
+  border-image: url("background-assets/menu.png") 6;
+  border-radius: 0px;
+  text-align: center;
+  padding: 24px; }
+
+/* The pie timer used by the screenshot tool. */
+.pie-timer {
+  width: 30px;
+  height: 30px;
+  -pie-border-width: 1px;
+  -pie-border-color: #808080;
+  -pie-background-color: rgba(192, 192, 192, 0.6); }
+
+.tile-preview {
+  background-color: rgba(192, 192, 192, 0.4);
+  border: 1px solid #000080; }
+
+/* Sound player. The overlay and every button state in the fallback are dark, and
+ * the theme's own overlay background is dark too. */
+.sound-player-overlay {
+  background-color: #c0c0c0;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("background-assets/menu.png") 6; }
+
+.sound-player-overlay > StBoxLayout,
+.sound-player-overlay StBin > StBoxLayout {
+  spacing: 6px; }
+
+.sound-player-generic-coverart {
+  background-color: rgba(0, 0, 0, 0.2); }
+
+.sound-player StButton {
+  border-radius: 0px;
+  padding: 6px 12px;
+  font-weight: normal;
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6; }
+
+.sound-player StButton:small {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6; }
+
+.sound-player StButton:hover,
+.sound-player StButton:hover:small {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.sound-player StButton:active,
+.sound-player StButton:active:small,
+.sound-player StButton:checked:small,
+.sound-player StButton:selected:small {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+.sound-player StButton:focus,
+.sound-player StButton:focus:small {
+  color: black;
+  background-color: transparent;
+  box-shadow: none;
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.sound-player StButton:insensitive,
+.sound-player StButton:insensitive:small {
+  color: #808080;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  text-shadow: 1px 1px #ffffff; }
+
+.sound-player StButton StIcon {
+  icon-size: 1em; }
+
+.sound-player StButton:small StIcon {
+  icon-size: 1.2em; }
