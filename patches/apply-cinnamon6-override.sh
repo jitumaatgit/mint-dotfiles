@@ -70,7 +70,7 @@ stylesheet_state() {
   fi
 
   if [ "$has_begin" -eq 1 ]; then
-    if extract_block | cmp -s - "$PAYLOAD"; then
+    if extract_block | cmp -s - "$PAYLOAD_N"; then
       echo managed-current
     else
       echo managed-stale
@@ -102,14 +102,14 @@ apply() {
   fi
 
   printf '%s\n' "$BEGIN_MARK"  >> "$tmp"
-  cat "$PAYLOAD"               >> "$tmp"
+  cat "$PAYLOAD_N"             >> "$tmp"
   printf '%s\n' "$END_MARK"    >> "$tmp"
 
   cp "$STYLESHEET" "$STYLESHEET.bak-cinnamon6"
   mv "$tmp" "$STYLESHEET"
 
   # Trust nothing: confirm the block landed byte-identical.
-  extract_block | cmp -s - "$PAYLOAD" || fail "applied block does not match the payload"
+  extract_block | cmp -s - "$PAYLOAD_N" || fail "applied block does not match the payload"
   grep -qF "$BEGIN_MARK" "$STYLESHEET" || fail "BEGIN marker missing after apply"
   grep -qF "$END_MARK"   "$STYLESHEET" || fail "END marker missing after apply"
   rm -f "$STYLESHEET.bak-cinnamon6"
@@ -166,6 +166,19 @@ done
 
 [ -f "$PAYLOAD" ]    || fail "payload not found at $PAYLOAD"
 [ -f "$STYLESHEET" ] || fail "stylesheet not found at $STYLESHEET (is Chicago95 installed? set CHICAGO95_THEME_DIR to point at it)"
+
+# Normalise the payload to end with exactly one newline, once, so that both the
+# block we write and the block we compare against see identical bytes. Without
+# this, a payload edited by a tool that does not end files with a newline
+# welds the END marker onto the last rule and the byte comparison fails.
+NORMALISED="$(mktemp)"
+trap 'rm -f "$NORMALISED"' EXIT
+cat "$PAYLOAD" > "$NORMALISED"
+if [ -s "$NORMALISED" ] && [ "$(tail -c1 "$NORMALISED" | wc -l)" -eq 0 ]; then
+  printf '\n' >> "$NORMALISED"
+fi
+
+PAYLOAD_N="$NORMALISED"
 
 case "$mode" in
   apply)  apply  ;;
