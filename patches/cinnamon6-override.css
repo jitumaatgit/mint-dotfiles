@@ -243,3 +243,140 @@
   font-size: 1em;
   text-align: center;
   color: black; }
+
+/* ---------------------------------------------------------------------------
+ * Dialog buttons
+ *
+ * These are the most-frequently-seen leak in the whole port: a dialog button is
+ * hovered constantly, and every state here falls back to #393939 / #454545
+ * with a 12px radius. The theme already ships the complete five-state Win95
+ * button treatment for its old `.modal-dialog-button`; these are the same
+ * states under the current name.
+ *
+ * `:destructive-action` gets no distinct treatment. Windows 95 had no
+ * destructive button, and inventing a red one would break the theme's
+ * language; the emphasis belongs on the pressed/hover states instead.
+ * ---------------------------------------------------------------------------
+ */
+
+.dialog .dialog-button,
+.dialog-button {
+  height: 22px;
+  font-size: 10pt;
+  font-weight: normal;
+  text-align: center;
+  color: black;
+  border-radius: 0px;
+  border: 0px;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  padding: 3px 31px 4px; }
+
+/* The default action gets the focus treatment at rest, so the button Enter
+ * will press is identifiable before anything is hovered. */
+.dialog .dialog-button:default,
+.dialog-button:default {
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.dialog .dialog-button:hover,
+.dialog .dialog-button:hover:default,
+.dialog .dialog-button:hover:destructive-action,
+.dialog-button:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.dialog .dialog-button:active,
+.dialog .dialog-button:checked,
+.dialog .dialog-button:active:default,
+.dialog .dialog-button:active:destructive-action,
+.dialog .dialog-button:checked:default,
+.dialog .dialog-button:checked:destructive-action,
+.dialog-button:active,
+.dialog-button:checked {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+.dialog .dialog-button:focus,
+.dialog .dialog-button:focus:default,
+.dialog .dialog-button:focus:destructive-action,
+.dialog-button:focus {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.dialog .dialog-button:focus:hover,
+.dialog .dialog-button:focus:checked,
+.dialog .dialog-button:focus:active,
+.dialog-button:focus:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-focus-hover.png") 6; }
+
+/* Win95 draws disabled text in embossed grey rather than dimming the frame. */
+.dialog .dialog-button:insensitive,
+.dialog .dialog-button:insensitive:default,
+.dialog .dialog-button:insensitive:destructive-action,
+.dialog-button:insensitive {
+  color: #808080;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  text-shadow: 1px 1px #ffffff; }
+
+/* ---------------------------------------------------------------------------
+ * Message and end-session dialogs
+ *
+ * `MessageDialogContent` (js/ui/dialog.js) builds these on top of `.dialog`,
+ * so the frame is already themed by the block above. What is left is the
+ * fallback's own decoration: the end-session picker paints its list title as a
+ * yellow pill, and the message dialog centres a large bold heading in the
+ * fallback's light-on-dark.
+ * ---------------------------------------------------------------------------
+ */
+
+.message-dialog-content {
+  spacing: 18px; }
+
+.message-dialog-content .message-dialog-title,
+.message-dialog-title,
+.message-dialog-title.lightweight {
+  font-weight: 800;
+  font-size: 1.364em;
+  text-align: center;
+  color: black; }
+
+/* `lightweight` is toggled by _updateTitleStyle() when the dialog is too small
+ * for the large heading. */
+.message-dialog-title.lightweight {
+  font-weight: bold;
+  font-size: 1em; }
+
+.message-dialog-content .message-dialog-caption {
+  font-weight: 400;
+  font-size: 0.818em;
+  text-align: center;
+  color: rgb(70, 70, 70); }
+
+.message-dialog-content .message-dialog-description {
+  text-align: center;
+  color: rgb(70, 70, 70); }
+
+.end-session-dialog {
+  min-width: 40em; }
+
+.end-session-dialog .dialog-content-box {
+  spacing: 0; }
+
+.end-session-dialog .dialog-list {
+  spacing: 0; }
+
+/* The fallback's yellow section header, which is the most alien thing a
+ * Cinnamon dialog can put on screen. */
+.end-session-dialog .dialog-list .dialog-list-title {
+  color: black;
+  background-color: transparent;
+  border-radius: 0px;
+  border-bottom: 1px solid rgb(70, 70, 70);
+  padding: 9px;
+  margin: 4px 0; }
