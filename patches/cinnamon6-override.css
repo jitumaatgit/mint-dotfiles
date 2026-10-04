@@ -707,3 +707,116 @@ StScrollBar StButton#vhandle:hover {
 
 .systray {
   padding: 0px; }
+
+/* ---------------------------------------------------------------------------
+ * Taskbars
+ *
+ * The theme's taskbar work is mostly alive: `.grouped-window-list-item-box`
+ * carries the full hover/focus/pressed treatment with the theme's panel assets,
+ * and `.panel-top .window-list-item-box` carries the button bevel.
+ *
+ * Two holes matter. The theme lists `:checked:hover` and `:focus:hover` for
+ * `.window-list-item-box` but not a bare `:hover`, so hovering a task button
+ * that is neither focused nor checked falls through to #393939 -- a dark flash
+ * on the single most-hovers-thing in the shell. And the thumbnail menu gets its
+ * colour but never a background, so the fallback's #242424 with an 8px radius
+ * shows through behind the window list.
+ * ---------------------------------------------------------------------------
+ */
+
+.window-list-item-box:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("panel-assets/hover-1.png") 6; }
+
+/* The grouped window list draws its badge with the same 99px pill the fallback
+ * uses for the dark theme; Win95 badges are square. */
+.grouped-window-list-notifications-badge {
+  border-radius: 0px;
+  background-color: #000080;
+  color: #ffffff; }
+
+.grouped-window-list-notifications-badge-label {
+  font-size: 12px; }
+
+.grouped-window-list-badge {
+  border-radius: 0px; }
+
+/* The thumbnail menu's frame. The theme sets the text colour but no background,
+ * so the fallback's dark panel and rounded corners show through. */
+.grouped-window-list-thumbnail-menu {
+  color: rgb(70, 70, 70);
+  padding: 0px;
+  margin: 6px;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("background-assets/menu.png") 6;
+  background-color: transparent;
+  box-shadow: none; }
+
+.grouped-window-list-thumbnail-menu > StBoxLayout {
+  padding: 4px; }
+
+.grouped-window-list-thumbnail-menu .separator {
+  background: rgba(255, 255, 255, 0.33); }
+
+/* The positional radius rules round the ends of a rounded menu. With square
+ * corners there is nothing to round. */
+.grouped-window-list-thumbnail-menu .item-box:first-child,
+.grouped-window-list-thumbnail-menu .item-box:last-child,
+.grouped-window-list-thumbnail-menu .item-box:only-child,
+.grouped-window-list-thumbnail-menu .item-box:outlined:first-child,
+.grouped-window-list-thumbnail-menu .item-box:outlined:last-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:first-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:first-child:last-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:last-child,
+.grouped-window-list-thumbnail-menu .item-box:selected:only-child {
+  border-radius: 0px; }
+
+/* The theme ships no progress assets -- its `.progress` rules are commented out
+ * and reference panel-assets/progress-*.svg, which are not present -- so the
+ * bars take a flat colour rather than a border image that would not resolve. */
+.window-list-item-box .progress,
+.grouped-window-list-item-box .progress {
+  background-color: #000080; }
+
+.grouped-window-list-item-label {
+  width: 15em;
+  min-width: 5px; }
+
+.grouped-window-list-thumbnail-label {
+  padding-left: 4px; }
+
+/* Positional variants. The fallback adds a 2px accent border to the panel-facing
+ * edge of a task button on whichever side it sits; Win95 buttons have a single
+ * uniform bevel, so the asymmetric border is removed and left to the bevel. */
+.window-list-item-box.top,
+.window-list-item-box.bottom,
+.grouped-window-list-item-box.top,
+.grouped-window-list-item-box.bottom {
+  border-bottom-width: 0px; }
+
+.window-list-item-box.left,
+.window-list-item-box.right,
+.grouped-window-list-item-box.left,
+.grouped-window-list-item-box.right {
+  padding-left: 0px;
+  padding-right: 0px;
+  border-left-width: 0px;
+  border-right-width: 0px; }
+
+.window-list-item-box.left StBin,
+.window-list-item-box.right StBin,
+.grouped-window-list-item-box.left StBin,
+.grouped-window-list-item-box.right StBin {
+  padding-left: 1px;
+  padding-right: 1px; }
+
+.window-list-item-box.top StLabel,
+.window-list-item-box.bottom StLabel {
+  padding-left: 2px; }
+
+/* The highlight box is the light-blue drop target drawn around the task list
+ * while dragging a window. */
+.window-list-box:highlight {
+  background-color: rgba(0, 0, 128, 0.35); }
