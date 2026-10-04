@@ -30,6 +30,17 @@ Versions everything in `$HOME` this repo does not own. No remote by design. Full
 
 `~/.omp/agent/config.yml` and `~/.zshrc` are symlinks into `home/`. Tool writes and hotkey presses modify tracked files unprompted — an `M` on those paths is often not a decision anyone made. Read the diff before staging.
 
+### Cinnamon themes have a dark fallback
+
+Cinnamon layers the selected theme over its **own dark stylesheet**: `Main.loadTheme()` builds `new St.Theme({fallback_stylesheet: /usr/share/cinnamon/theme/cinnamon.css})` and then loads the theme's `cinnamon.css` on top. Anything the theme does not declare resolves against that dark sheet. So a GTK2-era theme renders partly correct and partly dark, and **it is not dark mode** — check `org.gnome.desktop.interface color-scheme` once and then stop looking.
+
+- There is **no user stylesheet override**. `Main.setThemeStylesheet()` takes one path, from `org.cinnamon.theme name`, so theme fixes must be appended inside the theme directory — which home-git ignores. Hence `patches/cinnamon6-override.css` plus an idempotent applier. See `docs/guide/chicago95-cinnamon-port.md`.
+- **Re-run the applier after re-extracting any theme from upstream.** That edit is the one thing that does not survive on its own.
+- Reload without logging out: `gsettings set org.cinnamon.theme name 'Adapta-Nokto'` then back to the real name. It re-reads from disk.
+- **Never verify a stylesheet change with `background-color`.** St draws `border-image` over the background, so on any widget using a border image a changed background is invisible while having applied. Use a layout property; it cannot be occluded.
+- An absent effect is evidence about *which element paints*, not that the change failed. Confirm with a second probe. The panel's `background-color` did nothing on `.panel-top`/`#panel`, while `font-size` on the same `#panel` rule worked — the visible surface was `#panelLeft`/`#panelCenter`/`#panelRight`.
+- `patches/cinnamon6-coverage.py --gate` fails if Cinnamon ships a selector the theme does not declare. It reports widgets and selectors separately on purpose: collapsing pseudo-classes estimates the job, exact matching tells you what to write. A widget themed at rest but not on hover is covered by the first and still-to-do by the second. `./smoke.sh` runs it.
+
 ### Stow
 
 - `-R` restows (re-applies the package), `-D` unstows, `-d` is `--dir`. Only `-D` removes links.
