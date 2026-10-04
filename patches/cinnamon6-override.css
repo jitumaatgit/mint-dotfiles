@@ -1127,3 +1127,400 @@ StScrollBar StButton#vhandle:hover {
 
 .ripple-pointer-location {
   background-color: rgba(0, 0, 128, 0.25); }
+
+/* ---------------------------------------------------------------------------
+ * Calendar
+ *
+ * The largest remaining family. There is no calendar applet in
+ * enabled-applets on this machine, so none of this can be checked on screen;
+ * it is ported on the same basis as every other family here, from the fallback
+ * values and the theme's own assets.
+ *
+ * The theme ships Win95 month arrows (control-assets/calendar-arrow-*.png) and
+ * the fallback points at its own SVGs, so the arrows use the theme's.
+ * ---------------------------------------------------------------------------
+ */
+
+.calendar-main-box {
+  margin: 8px; }
+
+.calendar-change-month-back:rtl:hover {
+  background-image: url("control-assets/calendar-arrow-right-hover.png"); }
+
+.calendar-change-month-forward:rtl:hover {
+  background-image: url("control-assets/calendar-arrow-left-hover.png"); }
+
+.calendar-day-base:hover,
+.calendar-today:hover {
+  background-color: #000080;
+  color: #ffffff; }
+
+.calendar-not-today:selected {
+  background-color: #000080;
+  color: #ffffff; }
+
+.calendar-day-event-dot {
+  margin: 1px;
+  border-radius: 0px;
+  width: 4px;
+  height: 4px;
+  background-color: #000080; }
+
+.calendar-day-event-dot-box {
+  margin-top: 1.7em;
+  max-rows: 1; }
+
+.calendar-events-main-box {
+  height: 300px;
+  margin-right: 16px;
+  min-width: 350px;
+  border-right-width: 1px;
+  border-color: #808080; }
+
+.calendar-events-main-box .separator {
+  -margin-horizontal: 1em;
+  -gradient-height: 1px;
+  -gradient-start: transparent;
+  -gradient-end: transparent; }
+
+.calendar-events-scrollbox {
+  margin-top: 8px; }
+
+.calendar-today-day-label,
+.calendar-today-date-label,
+.calendar-events-date-label {
+  color: black; }
+
+.calendar-events-no-events-label {
+  font-weight: 700;
+  font-size: 1.364em;
+  color: black; }
+
+.calendar-events-no-events-icon {
+  color: #808080;
+  icon-size: 128px; }
+
+.calendar-events-no-events-button {
+  margin: 6px 0;
+  padding: 6px;
+  border-radius: 0px;
+  color: #808080; }
+
+.calendar-events-no-events-button:hover {
+  color: black; }
+
+.calendar-today-home-button,
+.calendar-today-home-button-enabled {
+  margin-left: 12px;
+  padding: 8px 12px;
+  border-radius: 0px; }
+
+.calendar-today-home-button:hover,
+.calendar-today-home-button-enabled:hover {
+  background-color: #000080;
+  color: #ffffff; }
+
+.calendar-event-button {
+  margin: 3px 0;
+  border-radius: 0px;
+  border: 1px solid transparent; }
+
+.calendar-event-button:hover {
+  background-color: #000080;
+  border-color: #000080;
+  color: #ffffff; }
+
+.calendar-event-color-strip {
+  width: 1px; }
+
+.calendar-event-row-content {
+  margin: 7px; }
+
+/* The fallback's summary colour #b2b2b2 is unreadable on the theme grey. */
+.calendar-event-summary {
+  color: rgb(70, 70, 70); }
+
+.calendar-event-countdown {
+  font-weight: 400;
+  font-size: 0.818em; }
+
+.calendar-event-countdown:soon {
+  color: #808080; }
+
+.calendar-event-countdown:imminent {
+  color: #b03020; }
+
+.calendar-event-countdown:current {
+  color: #000080; }
+
+.calendar-event-time-future,
+.calendar-event-time-past,
+.calendar-event-time-present,
+.calendar-event-time-present:all-day {
+  font-weight: 700;
+  font-size: 1em;
+  color: black; }
+
+/* ---------------------------------------------------------------------------
+ * Audio device picker and polkit user combo
+ *
+ * Both are lists of devices rendered as dark cards. The theme's button assets
+ * do the same job here.
+ * ---------------------------------------------------------------------------
+ */
+
+.audio-device-selection-dialog {
+  min-width: 24em; }
+
+.audio-device-selection-dialog .audio-selection-box {
+  spacing: 12px; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device {
+  color: black;
+  background-color: transparent;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("button-assets/button.png") 6; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device .audio-selection-device-box {
+  padding: 12px;
+  spacing: 12px; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device .audio-selection-device-icon {
+  icon-size: 64px; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:active,
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:checked,
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:selected {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:focus {
+  color: black;
+  background-color: transparent;
+  box-shadow: none;
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.audio-device-selection-dialog .audio-selection-box .audio-selection-device:insensitive {
+  color: #808080;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  text-shadow: 1px 1px #ffffff; }
+
+.polkit-dialog-user-layout {
+  text-align: center;
+  spacing: 2px; }
+
+.polkit-dialog-user-combo {
+  color: black;
+  background-color: transparent;
+  border-radius: 0px;
+  border: 2px solid transparent;
+  border-image: url("button-assets/button.png") 6; }
+
+.polkit-dialog-user-combo:hover {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-hover.png") 6; }
+
+.polkit-dialog-user-combo:active,
+.polkit-dialog-user-combo:checked,
+.polkit-dialog-user-combo:selected {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button-pressed.png") 6; }
+
+.polkit-dialog-user-combo:focus {
+  color: black;
+  background-color: transparent;
+  box-shadow: none;
+  border-image: url("button-assets/button-focus.png") 6; }
+
+.polkit-dialog-user-combo:insensitive {
+  color: #808080;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6;
+  text-shadow: 1px 1px #ffffff; }
+
+/* ---------------------------------------------------------------------------
+ * IME candidate popup
+ *
+ * Only reachable with a non-Latin input method active, which this machine does
+ * not have. The fallback is a dark rounded card; this is the same Win95 panel
+ * treatment as every other popup.
+ * ---------------------------------------------------------------------------
+ */
+
+.candidate-popup-boxpointer {
+  -arrow-border-radius: 0px;
+  -arrow-background-color: #c0c0c0;
+  -arrow-border-width: 2px;
+  -arrow-border-color: #808080;
+  -arrow-base: 24px;
+  -arrow-rise: 12px;
+  -arrow-box-shadow: none; }
+
+.candidate-popup-content {
+  padding: 0.5em;
+  spacing: 0.3em; }
+
+.candidate-box {
+  padding: 0.3em 0.5em 0.3em 0.5em;
+  border-radius: 0px;
+  color: black; }
+
+.candidate-box:hover,
+.candidate-box:selected {
+  background-color: #000080;
+  color: #ffffff; }
+
+.candidate-index {
+  padding: 0 0.5em 0 0;
+  color: black; }
+
+.candidate-page-button-box {
+  height: 2em; }
+
+.candidate-page-button {
+  padding: 4px; }
+
+.candidate-page-button-icon {
+  icon-size: 1em; }
+
+.candidate-page-button-next,
+.candidate-page-button-previous {
+  border-radius: 0px; }
+
+.candidate-page-button-previous {
+  border-right-width: 0; }
+
+.horizontal .candidate-page-button-box,
+.vertical .candidate-page-button-box {
+  spacing: 4px; }
+
+.word-suggestions {
+  font-size: 1.227em;
+  spacing: 20px;
+  min-height: 20pt;
+  color: black; }
+
+/* ---------------------------------------------------------------------------
+ * Loose ends
+ *
+ * A mix of two different things, kept together because both are small.
+ *
+ * 1. Class-vs-id spellings. The theme writes `#panelLeft`, `#panelCenter`,
+ *    `#panelRight` and `#notification`; Cinnamon's default writes
+ *    `.panelLeft`, `.panelCenter`, `.panelRight` and `.notification`. Both
+ *    match the same box -- js/ui/panel.js:2127 sets `name:` and `style_class:`
+ *    together -- and the id spelling wins on specificity, so these were never
+ *    visibly wrong. They are declared here so the theme does not depend on
+ *    that precedence, and so the coverage check reflects what is actually
+ *    declared rather than what happens to outrank what.
+ *
+ * 2. Genuine gaps: states that were only ever written in a compound selector
+ *    (`...:active:destructive-action` was declared, the bare
+ *    `...:destructive-action` was not), and small widgets the theme never
+ *    styled at all.
+ * ---------------------------------------------------------------------------
+ */
+
+.panelLeft,
+.panelCenter {
+  spacing: 4px; }
+
+.panelLeft:ltr {
+  padding-right: 4px; }
+
+.panelLeft:rtl {
+  padding-left: 4px; }
+
+.panelLeft.vertical,
+.panelRight.vertical {
+  padding: 0px; }
+
+.panelLeft.vertical:ltr,
+.panelRight.vertical:ltr {
+  padding-right: 0px; }
+
+.panelLeft.vertical:rtl,
+.panelRight.vertical:rtl {
+  padding-left: 0px; }
+
+.panelRight:ltr {
+  padding-left: 0px;
+  spacing: 0px; }
+
+.panelRight:rtl {
+  padding-right: 0px;
+  spacing: 0px; }
+
+.panelCenter.vertical {
+  padding-left: 0px;
+  padding-right: 0px; }
+
+/* The dnd tints are red/green/blue in the fallback. The theme's id rules
+ * already win here with flat #c0c0c0; these say so in the class spelling too
+ * rather than relying on that precedence. */
+.panelLeft:dnd,
+.panelCenter:dnd,
+.panelRight:dnd {
+  background-color: #c0c0c0; }
+
+.notification {
+  font-size: 8.5pt;
+  color: black; }
+
+.window-list-item-box {
+  color: black;
+  padding: 0px 6px; }
+
+.toggle-switch {
+  width: 16px;
+  height: 16px; }
+
+.toggle-switch:checked {
+  border-image: url("control-assets/switch-on.png") 6; }
+
+.workspace-add-button:hover {
+  transition-duration: 150; }
+
+.dialog .dialog-button:destructive-action {
+  color: black;
+  background-color: transparent;
+  border-image: url("button-assets/button.png") 6; }
+
+.message-dialog-content .message-dialog-title.lightweight {
+  font-weight: bold;
+  font-size: 1em;
+  color: black; }
+
+#appmenu-search-entry:focus {
+  background-color: white;
+  color: black;
+  border-image: url("misc-assets/entry.png") 6; }
+
+#appmenu-search-entry:insensitive {
+  background-color: rgb(236, 236, 236);
+  color: rgb(140, 140, 140); }
+
+#appmenu-search-entry .capslock-warning {
+  icon-size: 1.091em; }
+
+.popup-menu-arrow {
+  -arrow-border-radius: 0px;
+  -arrow-background-color: #c0c0c0;
+  -arrow-border-width: 2px;
+  -arrow-border-color: #808080;
+  -arrow-base: 24px;
+  -arrow-rise: 12px;
+  -arrow-box-shadow: none; }
+
+.wireless-active:insensitive {
+  color: rgb(140, 140, 140); }

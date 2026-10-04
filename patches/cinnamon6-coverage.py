@@ -71,6 +71,7 @@ THEME_CSS = Path(
 # excluded explicitly rather than silently left to fail the gate.
 EXCLUDED = {
     "vkeyboard": "on-screen keyboard; excluded by agreement (issue #1)",
+    "virtual-keyboard": "on-screen keyboard container; same exclusion",
     "menu-": "Cinnamon 3.x menu class names; no widget sets these any more",
 }
 
