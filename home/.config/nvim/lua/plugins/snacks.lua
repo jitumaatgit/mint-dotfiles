@@ -192,6 +192,13 @@ return {
       { "<leader>sd", "<cmd>lua Snacks.picker.diagnostics()<cr>", desc = "Diagnostics" },
       { "<leader>sD", "<cmd>lua Snacks.picker.diagnostics({ bufnr = 0 })<cr>", desc = "Buffer Diagnostics" },
       { "<leader>sG", "<cmd>lua Snacks.picker.grep({ cwd = vim.uv.cwd() })<cr>", desc = "Grep (cwd)" },
+      {
+        "<leader>sX",
+        function()
+          Snacks.picker.grep({ exclude = { "docs/90-archives/**", "90-archive/**" } })
+        end,
+        desc = "Grep (exclude archives)",
+      },
       { "<leader>sh", "<cmd>lua Snacks.picker.help()<cr>", desc = "Help Pages" },
       { "<leader>sH", "<cmd>lua Snacks.picker.highlights()<cr>", desc = "Search Highlight Groups" },
       { "<leader>sj", "<cmd>lua Snacks.picker.jumps()<cr>", desc = "Jumplist" },
