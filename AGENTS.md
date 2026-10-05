@@ -30,6 +30,14 @@ Versions everything in `$HOME` this repo does not own. No remote by design. Full
 
 `~/.omp/agent/config.yml` and `~/.zshrc` are symlinks into `home/`. Tool writes and hotkey presses modify tracked files unprompted — an `M` on those paths is often not a decision anyone made. Read the diff before staging.
 
+### Patching package-owned files
+
+A one-line fix to a distro package (`patches/apply-cinnamon-screensaver-gib-patch.sh`) needs `dpkg-divert`, not just an edit: without it `apt upgrade` silently reverts. Two traps make the obvious commands fail.
+- `dpkg-divert --add --rename` **refuses to rename** a file the diverting package owns ("Ignoring request to rename…"), so the pristine copy has to be made with `cp -a` to the divert path.
+- `dpkg-divert --remove --rename` **refuses to overwrite** an existing differing file, so revert must drop the diversion first and then `cp` the packaged file into place.
+- The diverted copy is what `apt upgrade` refreshes, which makes it the signal for "upstream fixed this": `--check` then reports `UPSTREAM-FIXED` and a plain run hands the file back.
+- Under `set -o pipefail`, `dpkg-divert --list | grep -q` dies of SIGPIPE (141) and reads as "not diverted". Use a here-string.
+
 ### Cinnamon themes have a dark fallback
 
 Cinnamon layers the selected theme over its **own dark stylesheet**: `Main.loadTheme()` builds `new St.Theme({fallback_stylesheet: /usr/share/cinnamon/theme/cinnamon.css})` and then loads the theme's `cinnamon.css` on top. Anything the theme does not declare resolves against that dark sheet. So a GTK2-era theme renders partly correct and partly dark, and **it is not dark mode** — check `org.gnome.desktop.interface color-scheme` once and then stop looking.
