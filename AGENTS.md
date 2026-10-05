@@ -38,6 +38,29 @@ A one-line fix to a distro package (`patches/apply-cinnamon-screensaver-gib-patc
 - The diverted copy is what `apt upgrade` refreshes, which makes it the signal for "upstream fixed this": `--check` then reports `UPSTREAM-FIXED` and a plain run hands the file back.
 - Under `set -o pipefail`, `dpkg-divert --list | grep -q` dies of SIGPIPE (141) and reads as "not diverted". Use a here-string.
 
+### Input devices
+
+Linux keeps two independent numbering spaces for input, and conflating them produces a silent bug.
+- `/sys/class/input/inputN` and `/dev/input/eventM` are **not** the same index and do not track each other. Here the touchpad is `input30` but its event node is `event5`, while `input5` is `PS/2 Generic Mouse`. Reading `event5` out of `libinput`/`touchegg` output and pasting it as an input index is how `enable-touchpad.sh` came to target the wrong device entirely.
+- Resolve by property, never by index: `udevadm info --query=property --path=/sys/class/input/inputN | grep -qx 'ID_INPUT_TOUCHPAD=1'` is the same classification libinput uses, is readable from `/run/udev` without root, and yields the path directly. Confirm the match is unique before acting on it — an external touchpad makes it two.
+- **`runtime_status: unsupported` means the device can never be runtime-suspended.** Writing `power/runtime_enabled` or `power/control` at such a device is a no-op, so no autosuspend fix can possibly help. Read `power/runtime_status` before believing one. This touchpad reports `unsupported`; `control` reads `auto` and looks like the smoking gun, but nothing can act on it.
+- Only two things actually block input: the `org.cinnamon.desktop.peripherals.touchpad send-events` gsettings key, and the kernel `inhibited` flag (`/sys/class/input/inputN/inhibited`, the mechanism `keyboard-toggle` uses). Everything else in sysfs is decoration.
+
+### Watching a GSettings key from outside its own process
+
+For logging who changes a key cross-process (`~/.local/bin/touchpad-watch.sh`, `touchpad-watch.service`).
+- **GSettings has no cross-process change signal.** `org.freedesktop.DBus.Properties.PropertiesChanged` is never emitted for dconf-backed keys, so a `dbus-monitor` filter on it captures nothing and fails silently — the watcher ran, matched nothing, and logged nothing.
+- The only cross-process signal is the write itself: `ca.desrt.dconf.Writer.Change`, a method call on `/ca/desrt/dconf/Writer/user`. The key path arrives **hex-encoded** in a byte array wrapped across lines, so match against the accumulated hex, not a decoded string.
+- **Do not attribute from `ca.desrt.dconf.Writer.Notify`.** dconf-service emits that itself, so it resolves to dconf-service no matter who wrote the value. Take the `sender` from the `Change` call instead — that is the real writer.
+- Each write produces **two** `Change` calls: the client, then dconf-service relaying it. Comparing against the previous value collapses the pair into one log line.
+- Resolve `sender` to a PID **first**, before any sleeping or other work: `gsettings` and similar short-lived clients have already exited by then, so a delayed lookup only ever yields a bare bus name. `busctl --user status :1.N | sed -n 's/^PID=//p'`, then read `/proc/$PID/comm`.
+
+### systemd user units that need root
+
+- This machine has `mint ALL=(ALL) NOPASSWD:ALL` in `/etc/sudoers.d/mint`, so a user unit can `sudo` with no prompt. A unit that lost its `sudo` — this one was installed from a stripped copy — fails silently against root-owned sysfs and looks like it did nothing.
+- **`ExecStart` must be a leaf.** An installer script that also installs and enables its own unit will loop the moment systemd runs that unit; it took 69s to notice. Keep install and run on separate flags and have the unit call the repair-only one.
+- A `--quiet` flag that still installs is the same bug wearing a hat. Route output suppression and action selection through separate variables.
+
 ### Cinnamon themes have a dark fallback
 
 Cinnamon layers the selected theme over its **own dark stylesheet**: `Main.loadTheme()` builds `new St.Theme({fallback_stylesheet: /usr/share/cinnamon/theme/cinnamon.css})` and then loads the theme's `cinnamon.css` on top. Anything the theme does not declare resolves against that dark sheet. So a GTK2-era theme renders partly correct and partly dark, and **it is not dark mode** — check `org.gnome.desktop.interface color-scheme` once and then stop looking.
