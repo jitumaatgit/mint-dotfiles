@@ -81,6 +81,7 @@ function M.process_checkbox_completion()
   local bufnr = vim.api.nvim_get_current_buf()
   local filepath = vim.api.nvim_buf_get_name(bufnr)
   if not filepath:match("%.md$") then return end
+  if filepath:match("weeklynotes/%d%d%d%d/%d%d%d%d%-W%d%d%.md$") then return end
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
