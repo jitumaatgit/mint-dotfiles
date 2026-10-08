@@ -308,6 +308,15 @@ export SYSTEMD_COLORS=1
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.bun/bin:$PATH"
 
+# Docker (rootless). The daemon runs as this user, so its socket lives in the
+# per-user runtime dir, not /run/docker.sock. DOCKER_HOST is set here rather
+# than relying on `docker context use rootless` because non-CLI tools (compose,
+# testcontainers, agents) only read the environment. Consequence: while this is
+# exported, `docker context use` no longer changes which daemon the CLI talks
+# to -- the environment wins. Derived from XDG_RUNTIME_DIR/uid instead of a
+# hardcoded 1001 so it stays correct if the uid ever changes.
+export DOCKER_HOST="unix://${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/docker.sock"
+
 for f in ~/notes/*.env(N); do [ -f "$f" ] && . "$f"; done
 unset f
 
@@ -524,6 +533,18 @@ hrstat() {
     "${since_arg[@]}" 2>/dev/null | grep -c "Failed to extract")
   print -r -- "FAILS  $warns extraction failures this run"
 }
+# `caps` toggles Caps Lock. Caps Lock is ON whenever you are typing in ALL
+# CAPS, which is exactly when you want to turn it off -- but zsh alias lookup
+# is case-SENSITIVE, so typing it with Caps Lock on yields `CAPS`, which would
+# not match a `caps` alias. Hence one alias per case variant.
+#
+# Why a command is needed at all: keyd remaps the CapsLock KEY on the internal
+# laptop keyboard to tap=Escape / hold=Control (/etc/keyd/laptop.conf). The Menu
+# key still gives real Caps Lock, and `caps` gives it from anywhere.
+for _c in caps CAPS Caps cAPs CaPs caPS capS CapS capstog CAPSTOG CapsTog; do
+	alias $_c='capstog'
+done
+unset _c
 
 # zsh-syntax-highlighting MUST be sourced last. It walks the widget list once
 # at source time and wraps each widget; anything that registers a ZLE widget

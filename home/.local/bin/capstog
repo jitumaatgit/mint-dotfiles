@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# capstog - toggle Caps Lock from the command line, case-insensitively.
+#
+# Why a command at all: keyd remaps the CapsLock KEY on the internal laptop
+# keyboard to tap=Escape / hold=Control (see /etc/keyd/laptop.conf). The Menu
+# key still gives real Caps Lock, but Menu is not always reachable, and the
+# physical Caps Lock key no longer produces a lock. So toggle it in software.
+#
+# Why case-insensitive: Caps Lock is often ON while this is being typed -- the
+# all-caps case is exactly when you most want to turn it off. The shell is
+# case-sensitive, so a plain `capstog` would be typed as `CAPSTOG` and not
+# resolve. Hence this script compares its own name in lower case.
+#
+# X11 only: this injects via xdotool/XTEST, which sits ABOVE keyd in the stack
+# (XTEST -> X server -> keyd is below), so it is not remapped by the
+# capslock binding. Verified on Cinnamon/X11 with the LED mask observed before
+# and after each toggle.
+
+set -uo pipefail
+
+if [[ -z "${DISPLAY:-}" ]]; then
+	echo "capstog: no DISPLAY; Caps Lock toggle needs an X session" >&2
+	exit 1
+fi
+
+if ! command -v xdotool >/dev/null 2>&1; then
+	echo "capstog: xdotool not installed" >&2
+	exit 1
+fi
+
+# Ignore how it was typed: caps, CAPS, CaPs.
+cmd_name="${0##*/}"
+cmd_lower="$(printf '%s' "$cmd_name" | tr '[:upper:]' '[:lower:]')"
+
+case "$cmd_lower" in
+	caps | capstog | caps-lock | toggle-caps) ;;
+	*)
+		echo "capstog: unknown command name '${cmd_name}'" >&2
+		exit 2
+		;;
+esac
+
+# LED bit 0 is the Caps Lock indicator in the X server's LED mask.
+caps_on() {
+	# LED bit 0 is the Caps Lock indicator in the X server's LED mask,
+	# reported as 8 hex digits ("00000001" = on).
+	xset q 2>/dev/null |
+		sed -n 's/.*LED mask:[[:space:]]*\([0-9A-Fa-f]*\).*/\1/p' |
+		head -n1 |
+		sed -n 's/.*\(.\)$/\1/p'
+}
+before="$(caps_on)"
+xdotool key Caps_Lock
+sleep 0.15
+after="$(caps_on)"
+
+if [[ "$before" == "$after" ]]; then
+	# No change means the X server refused the synthetic press (e.g. another
+	# client grabbed the keyboard). Say so rather than reporting a lie.
+	echo "capstog: toggle did not change the Caps Lock LED mask (still $after)" >&2
+	exit 1
+fi
+
+if [[ "$after" == "1" ]]; then
+	echo "Caps Lock: ON"
+else
+	echo "Caps Lock: OFF"
+fi
