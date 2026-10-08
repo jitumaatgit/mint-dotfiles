@@ -13,10 +13,13 @@ diffed and restored.
 | 10MB + gitlink guards | `/home/mint/.home-git/hooks/pre-commit` |
 | Commands | `/home/mint/.local/bin/{hgit,hsnap,hrestore}` |
 
-There is no `.git` directory in `$HOME`, so plain `git` anywhere in the home tree
-still reports "not a git repository" and nested repos (`mint-dotfiles`, `notes`,
-`projects/*`) resolve to their own `.git`. Only the three commands above touch
-home-git.
+`$HOME` contains a one-line gitdir pointer, `~/.git` → `gitdir: /home/mint/.home-git`,
+added so `git-bug` can run here (git-bug needs a literal `.git` in the work tree and
+has no `--git-dir` flag). Plain `git` run in `$HOME` or any non-nested directory under
+it now resolves to home-git instead of reporting "not a git repository"; nested repos
+(`mint-dotfiles`, `notes`, `projects/*`) still resolve to their own `.git`. The pointer
+itself is never listed by `git status` and never staged, so it needs no ignore rule.
+The three commands above remain the explicit way in.
 
 ## Commands
 

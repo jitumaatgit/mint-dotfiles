@@ -22,6 +22,7 @@ Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `doc
 Versions everything in `$HOME` this repo does not own. No remote by design. Full workflow in `docs/guide/home-git.md`.
 - `hsnap` no-ops on a clean tree, so run it reflexively before any risky change; `hgit diff` after shows exactly what changed.
 - Never `export GIT_DIR`/`GIT_WORK_TREE` in a persistent shell — an incidental `git add` then lands in home-git. The scripts set them internally only.
+- `~/.git` is a one-line gitdir pointer to `~/.home-git`, added 2026-10-08 so git-bug can run in `$HOME`. Plain git from `$HOME` or any non-nested subdir now targets home-git directly: a `git add -A` there needs no exported `GIT_DIR` to land in the home repo. git-bug data lives in `.home-git` as refs (`refs/bugs/*`, `refs/identities/*`), never as worktree files, so it never appears in a snapshot; git-bug identities are per-repo.
 - A full `hrestore <old-rev>` rewrites the hook and the scripts themselves, because they are tracked inside the tree they operate on. Prefer `hrestore -- <path>`.
 - Exclude content-addressed stores. An early snapshot pulled in hister's index: 5,271 files, 40% of the commit, growing on every reindex until `hgit diff` was unreadable.
 - Adding an ignore rule does not untrack; it also needs `hgit rm --cached -- <path>`, plus `-f` for gitlinks.
