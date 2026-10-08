@@ -1,0 +1,235 @@
+#!/usr/bin/env python3
+"""caffeine - stop the Cinnamon session going idle (lock and blank), like macOS's.
+
+WHY THIS EXISTS
+---------------
+Cinnamon locks and blanks the screen once `org.cinnamon.desktop.session
+idle-delay` (900 s here) elapses with no input. The switch that suspends that
+is cinnamon-session's org.gnome.SessionManager.Inhibit with flag 8
+(GSM_INHIBITOR_FLAG_IDLE).
+
+The screensaver's own org.freedesktop.ScreenSaver interface also advertises
+Inhibit/UnInhibit, but a cookie from it registers no inhibitor anywhere:
+holding one leaves `systemd-inhibit --list` and logind's ListInhibitors
+unchanged. It does not stop the idle lock, so this script does not use it.
+
+WHY THERE IS A HOLDER PROCESS
+-----------------------------
+An inhibit belongs to the D-Bus connection that asked for it, and
+cinnamon-session drops it the instant that client disconnects. Verified: a
+one-shot `gdbus call ... Inhibit ...`, whose process exits immediately, leaves
+GetInhibitors unchanged. So `caffeine on` starts this same script in --hold
+mode, which keeps one connection open for as long as the inhibit is wanted.
+
+USAGE
+-----
+    caffeine            status
+    caffeine on [why]   inhibit the idle timer
+    caffeine off        release it and stop the holder
+    caffeine toggle     flip
+
+State lives in $XDG_RUNTIME_DIR/caffeine.state, so it dies with the session,
+and a state file whose holder is gone is cleaned up automatically.
+"""
+
+import json
+import os
+import signal
+import subprocess
+import sys
+import time
+
+from gi.repository import Gio, GLib
+
+BUS_NAME = "org.gnome.SessionManager"
+OBJECT_PATH = "/org/gnome/SessionManager"
+IFACE = "org.gnome.SessionManager"
+
+FLAG_IDLE = 8  # GSM_INHIBITOR_FLAG_IDLE; add 4 for suspend, 2 for user-switch.
+APP_ID = "caffeine"
+WINDOW_XID = 0
+DEFAULT_REASON = "caffeine: keep session awake"
+
+STATE = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp",
+                     "caffeine.state")
+
+
+def session_bus():
+    return Gio.bus_get_sync(Gio.BusType.SESSION, None)
+
+
+def inhibit(connection, reason):
+    reply = connection.call_sync(
+        BUS_NAME, OBJECT_PATH, IFACE, "Inhibit",
+        GLib.Variant("(susu)", (APP_ID, WINDOW_XID, reason, FLAG_IDLE)),
+        None, Gio.DBusCallFlags.NONE, -1, None)
+    return reply.unpack()[0]
+
+
+def uninhibit(connection, cookie):
+    try:
+        connection.call_sync(
+            BUS_NAME, OBJECT_PATH, IFACE, "Uninhibit",
+            GLib.Variant("(u)", (cookie,)),
+            None, Gio.DBusCallFlags.NONE, -1, None)
+    except GLib.Error:
+        pass  # session manager gone, or already released
+
+
+def read_state():
+    try:
+        with open(STATE) as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return None
+
+
+def clear_state():
+    try:
+        os.remove(STATE)
+    except OSError:
+        pass
+
+
+def active_state():
+    """State dict, but only while its holder process is still alive."""
+    state = read_state()
+    if not state:
+        return None
+    try:
+        os.kill(state["pid"], 0)
+    except OSError:
+        clear_state()
+        return None
+    return state
+
+
+def hold(reason):
+    """--hold: take the inhibit and stay alive to keep it."""
+    connection = session_bus()
+    cookie = inhibit(connection, reason)
+    with open(STATE, "w") as handle:
+        json.dump({"pid": os.getpid(), "cookie": int(cookie),
+                   "reason": reason, "started": int(time.time())}, handle)
+
+    loop = GLib.MainLoop()
+
+    def stop():
+        loop.quit()
+        return GLib.SOURCE_REMOVE
+
+    # GLib source, not signal.signal: a Python handler only runs between
+    # bytecodes, and this process sits blocked inside the main loop.
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGTERM, stop)
+    GLib.unix_signal_add(GLib.PRIORITY_DEFAULT, signal.SIGINT, stop)
+
+    try:
+        loop.run()
+    finally:
+        uninhibit(connection, cookie)
+        clear_state()
+    return 0
+
+
+def wait_for_holder(deadline=5.0):
+    end = time.time() + deadline
+    while time.time() < end:
+        time.sleep(0.1)
+        state = active_state()
+        if state:
+            return state
+    return None
+
+
+def cmd_on(reason):
+    state = active_state()
+    if state:
+        print("caffeine: already on (pid %d)" % state["pid"])
+        return 0
+    clear_state()
+    subprocess.Popen(
+        [sys.executable, os.path.realpath(__file__), "--hold", reason],
+        start_new_session=True,
+        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL)
+    state = wait_for_holder()
+    if not state:
+        print("caffeine: holder did not come up; is the session bus up?",
+              file=sys.stderr)
+        return 1
+    print("caffeine: ON - idle lock/blank inhibited (pid %d, reason: %s)"
+          % (state["pid"], state["reason"]))
+    return 0
+
+
+def cmd_off():
+    state = active_state()
+    if not state:
+        clear_state()
+        print("caffeine: already off")
+        return 0
+    try:
+        os.kill(state["pid"], signal.SIGTERM)
+    except OSError:
+        clear_state()
+        print("caffeine: holder was already gone")
+        return 0
+    if not _gone(state["pid"]):
+        print("caffeine: holder %d did not exit" % state["pid"], file=sys.stderr)
+        return 1
+    clear_state()
+    print("caffeine: OFF")
+    return 0
+
+
+def _gone(pid, deadline=5.0):
+    end = time.time() + deadline
+    while time.time() < end:
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return True
+        time.sleep(0.1)
+    return False
+
+
+def cmd_status():
+    state = active_state()
+    if not state:
+        print("caffeine: off")
+        return 0
+    since = time.strftime("%H:%M", time.localtime(state["started"]))
+    print("caffeine: ON (pid %d, since %s, reason: %s)"
+          % (state["pid"], since, state["reason"]))
+    return 0
+
+
+def usage(message=None):
+    if message:
+        print("caffeine: %s" % message, file=sys.stderr)
+    print("usage: caffeine [on [why] | off | toggle | status]", file=sys.stderr)
+    return 2
+
+
+def main(argv):
+    if len(argv) > 1 and argv[1] == "--hold":
+        return hold(" ".join(argv[2:]) or DEFAULT_REASON)
+
+    command = argv[1] if len(argv) > 1 else "status"
+    rest = " ".join(argv[2:])
+
+    if command == "on":
+        return cmd_on(rest or DEFAULT_REASON)
+    if command == "off":
+        return cmd_off()
+    if command == "toggle":
+        if active_state():
+            return cmd_off()
+        return cmd_on(rest or DEFAULT_REASON)
+    if command in ("status", "-s", "--status"):
+        return cmd_status()
+    return usage("unknown command %r" % command)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
