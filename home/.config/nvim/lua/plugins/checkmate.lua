@@ -167,7 +167,9 @@ return {
     map("n", "<leader>tu", checkmate.uncheck, { desc = "Uncheck todo" })
     map("x", "<leader>tu", checkmate.uncheck, { desc = "Uncheck selected todos" })
     map("n", "<leader>tg", checkmate.archive, { desc = "Archive completed todos" })
-    map({ "n", "x" }, "<leader>tx", checkmate.cancel, { desc = "Cancel todo" })
+    map({ "n", "x" }, "<leader>tx", function()
+      checkmate.toggle("cancelled")
+    end, { desc = "Cancel todo" })
 
     -- Metadata keymaps (use main module's add_metadata which handles context)
     map("n", "<leader>te", function()
