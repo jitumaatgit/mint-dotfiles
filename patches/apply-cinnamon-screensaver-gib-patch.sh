@@ -20,29 +20,28 @@ TARGET="$PKG_ROOT/pamhelper/authClient.py"
 DISTRIB="$TARGET.distrib"
 PATCH="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/cinnamon-screensaver-gib-typo.patch"
 
-# The typo's own error handler, so we can tell a patched file from a clean one.
-MARKER="Gio.IOErrorEnum.CANCELLED"
-
 log()  { printf '%s\n' "$*"; }
 fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-has_bug()    { grep -qF 'Gib.IOErrorEnum' "$1" 2>/dev/null; }
-is_patched() { ! has_bug "$TARGET" && grep -qF "$MARKER" "$TARGET"; }
+has_bug() { grep -qF 'Gib.IOErrorEnum' "$1" 2>/dev/null; }
 # Here-string, not a pipe: `dpkg-divert --list | grep -q` dies of SIGPIPE (141)
 # under `set -o pipefail`, which would read as "not diverted".
 is_diverted() { grep -qF "diversion of $TARGET" <<< "$(dpkg-divert --list 2>/dev/null)"; }
 
-# Hand $TARGET back to the package. `dpkg-divert --remove --rename` refuses to
-# overwrite an existing differing file, so drop the diversion first and then
-# copy their file (preserving the destination inode, so root:root and mode
-# are kept) into place.
-restore_packaged_file() {
+# Unload: drop the diversion. `dpkg-divert --remove --rename` refuses to
+# overwrite an existing differing file, so hand $TARGET back in two steps.
+unload_patch() {
     if is_diverted; then
         # --no-rename explicit: dpkg 1.20.x flips the default to --rename.
         sudo dpkg-divert --remove --no-rename --package "$PKG" "$TARGET" \
             || fail "could not remove diversion for $TARGET"
         log "removed diversion for $TARGET"
     fi
+}
+
+# Reload: take the packaged file from the divert path. Plain cp keeps the
+# destination inode, so root:root and mode survive.
+reload_packaged() {
     if [ -f "$DISTRIB" ]; then
         sudo cp "$DISTRIB" "$TARGET" || fail "could not restore $TARGET from $DISTRIB"
         sudo rm -f "$DISTRIB"
@@ -89,11 +88,8 @@ client.in_pipe = BrokenPipe()
 
 try:
     client.message_to_child("hunter2\n")
-except NameError as e:
-    print("FAIL: NameError escaped message_to_child: %s" % e)
-    sys.exit(1)
 except Exception as e:
-    print("FAIL: %s: %s" % (type(e).__name__, e))
+    print("FAIL: %s escaped message_to_child: %s" % (type(e).__name__, e))
     sys.exit(1)
 print("verified: flush() error handled, no NameError")
 PY
@@ -102,12 +98,12 @@ PY
 report() {
     if is_diverted && [ -f "$DISTRIB" ] && ! has_bug "$DISTRIB"; then
         log "UPSTREAM-FIXED  $TARGET (diverted copy has no typo; run without --check to revert)"
-    elif is_patched; then
+    elif is_diverted && ! has_bug "$TARGET"; then
         log "PATCHED         $TARGET"
-    elif has_bug "$TARGET"; then
-        log "UNPATCHED       $TARGET"
+    elif ! has_bug "$TARGET"; then
+        log "CLEAN           $TARGET (upstream file, no diversion, nothing to do)"
     else
-        log "UNKNOWN         $TARGET (no typo, no expected fix line)"
+        log "UNPATCHED       $TARGET"
     fi
 }
 
@@ -131,11 +127,8 @@ if [ "$check_only" -eq 1 ]; then
 fi
 
 if [ "$revert" -eq 1 ]; then
-    if is_diverted || [ -f "$DISTRIB" ]; then
-        restore_packaged_file
-    else
-        log "no diversion registered and no $DISTRIB, nothing to revert"
-    fi
+    unload_patch
+    reload_packaged
     report
     exit 0
 fi
@@ -143,27 +136,27 @@ fi
 # Upstream fixed it: drop our copy and take theirs back.
 if is_diverted && [ -f "$DISTRIB" ] && ! has_bug "$DISTRIB"; then
     log "upstream $PKG no longer has the typo -- reverting to the packaged file"
-    restore_packaged_file
+    unload_patch
+    reload_packaged
     report
     exit 0
 fi
 
-
-if is_patched; then
+if ! has_bug "$TARGET"; then
     log "already patched, nothing to do"
     verify
     log "verification passed"
     exit 0
 fi
 
-has_bug "$TARGET" || fail "$TARGET has no typo and is not our patched copy; refusing to guess"
-
-# Keep a pristine reference so --revert always has a target. dpkg-divert
-# refuses to rename the file itself (dpkg owns it), so make the copy here.
+# Load: divert first, so apt installs future versions to $DISTRIB and leaves
+# ours alone. dpkg-divert refuses to rename a file the diverting package owns
+# ("Ignoring request to rename..."), so the pristine copy is made here.
 if ! is_diverted; then
     sudo dpkg-divert --add --rename --package "$PKG" "$TARGET" \
         || fail "could not add diversion"
     log "diverted $TARGET -> $DISTRIB"
+    reload_packaged
 fi
 if [ ! -f "$DISTRIB" ]; then
     sudo cp -a "$TARGET" "$DISTRIB"
@@ -178,7 +171,9 @@ awk '/^--- a\//{f=1} f' "$PATCH" > "$PATCH_ROOT/change.diff"
 sudo patch -p1 -d "$PKG_ROOT" --no-backup-if-mismatch < "$PATCH_ROOT/change.diff" \
     || fail "patch failed (upstream file may have changed; regenerate the diff)"
 
-is_patched || fail "patch reported success but $MARKER is absent from $TARGET"
+if has_bug "$TARGET"; then
+    fail "patch reported success but the typo is still present in $TARGET"
+fi
 
 verify
 log "patched $TARGET"

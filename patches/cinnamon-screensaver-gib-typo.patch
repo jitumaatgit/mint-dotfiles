@@ -1,26 +1,11 @@
-Fix `Gib` -> `Gio` typo in cinnamon-screensaver's PAM helper client.
+Fix `Gib` -> `Gio` in cinnamon-screensaver's PAM helper client (authClient.py),
+where the typo makes the `except GLib.Error` handler in message_to_child() raise
+NameError instead of reporting. Write-up and applier:
+docs/cinnamon-screensaver-errors.md, apply-cinnamon-screensaver-gib-patch.sh.
+Apply only via that script: it strips this header first, because patch(1)
+cannot read a diff with prose in front of it.
 
-`AuthClient.message_to_child()` wraps `self.in_pipe.flush(None)` in a
-`except GLib.Error` handler, but that handler dereferences `Gib.IOErrorEnum`.
-`Gib` is not defined anywhere in the module -- `Gio` is imported at the top --
-so any non-cancelled GLib.Error raised by flush() raises `NameError: name 'Gib'
-is not defined` from inside the error handler instead of being reported. That
-leaves the PAM helper's stdin pipe in the state the surrounding cleanup path
-was meant to handle.
-
-Reproduced against cinnamon-screensaver 6.6.1+zena: driving message_to_child()
-with an in_pipe whose flush() raises Gio.IOErrorEnum.BROKEN_PIPE lets
-`NameError: name 'Gib' is not defined` escape the call.
-
-Reported upstream: https://github.com/linuxmint/cinnamon-screensaver/issues/512
-(open 2026-08-23; still present in upstream master at time of writing).
-
-This is unrelated to the exit-time `Error in sys.excepthook` burst documented
-in docs/cinnamon-screensaver-errors.md -- that code path runs synchronously
-from `on_unlock_clicked`, not during finalization.
-
-Apply with patches/apply-cinnamon-screensaver-gib-patch.sh (which diverts the
-package-owned file so `apt upgrade` does not silently revert this).
+Upstream: https://github.com/linuxmint/cinnamon-screensaver/issues/512
 
 --- a/pamhelper/authClient.py
 +++ b/pamhelper/authClient.py
