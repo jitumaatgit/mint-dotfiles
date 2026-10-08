@@ -121,3 +121,4 @@ export PATH=/home/mint/.opencode/bin:$PATH
 
 # Default browser for CLI tools
 export BROWSER="zen-browser"
+
