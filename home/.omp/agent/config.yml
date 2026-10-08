@@ -1,13 +1,13 @@
 modelRoles:
-  smol: opencode-go/space-bunny-free
-  task: opencode-go/space-bunny-free
-  commit: opencode-go/space-bunny-free
-  tiny: opencode-go/space-bunny-free
-  memory: opencode-go/space-bunny-free
-  slow: opencode-go/space-bunny-free
+  smol: opencode-go/mimo-v2.6-flash
+  task: opencode-go/gpt-6-luna
+  commit: opencode-go/mimo-v2.6-flash
+  tiny: opencode-go/mimo-v2.6-flash
+  memory: opencode-go/mimo-v2.6-flash
+  slow: opencode-go/gpt-6-luna
   plan: fcm-router/fcm
   advisor: fcm-router/fcm
-  judge: opencode-go/space-bunny-free
+  judge: opencode-go/deepseek-v4.1-flash
   default: fcm-router/fcm:off
   vision: fcm-router/fcm
   web: web/exa
@@ -46,43 +46,51 @@ retry:
       - web/duckduckgo
       - web/public
     smol:
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/deepseek-v4.1-flash
       - fcm-router/fcm
-      - opencode-go/mimo-v2.5
+      - opencode-go/longcat-2.5-preview-free
     task:
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
-      - opencode-go/mimo-v2.5
+      - opencode-go/longcat-2.5-preview-free
     commit:
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/deepseek-v4.1-flash
       - fcm-router/fcm
-      - opencode-go/mimo-v2.5
+      - opencode-go/longcat-2.5-preview-free
     tiny:
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/deepseek-v4.1-flash
       - fcm-router/fcm
-      - opencode-go/mimo-v2.5
+      - opencode-go/longcat-2.5-preview-free
     memory:
+      - opencode-go/deepseek-v4.1-flash
+      - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
-      - fcm-router/fcm
-      - opencode-go/mimo-v2.5
     slow:
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
-      - opencode-go/deepseek-v4-flash
-      - opencode-go/mimo-v2.5
+      - opencode-go/longcat-2.5-preview-free
     plan:
-      - opencode-go/space-bunny-free
-      - opencode-go/mimo-v2.5
+      - opencode-go/gpt-6-luna
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/longcat-2.5-preview-free
     advisor:
-      - opencode-go/space-bunny-free
-      - opencode-go/mimo-v2.5
+      - opencode-go/gpt-6-luna
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/longcat-2.5-preview-free
     default:
-      - opencode-go/space-bunny-free
-      - opencode-go/mimo-v2.5
+      - opencode-go/gpt-6-luna
+      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/longcat-2.5-preview-free
     vision:
-      - opencode-go/mimo-v2.5
+      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
+      - opencode-go/longcat-2.5-preview-free
     judge:
-      - opencode-go/space-bunny-free
+      - opencode-go/gpt-6-luna
+      - opencode-go/mimo-v2.6-flash
+      - opencode-go/longcat-2.5-preview-free
   usageAwareFallback: false
   usageReservePct: 25
   usageReservePolicy: confirm

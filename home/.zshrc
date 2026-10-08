@@ -112,8 +112,8 @@ setopt ignore_eof # so C-d doesnt close window on an empty prompt
 # model classifies as kimi/mimo/minimax/deepseek/stepfun, which silently drops
 # the [path#TAG] drift check AND the seen-line guard -- `enforce_seen_lines`
 # is only passed to HashlineEngine, the other four modes don't accept it.
-# `mimo-v2.5` and `deepseek-v4-flash` are both in this repo's fallback chains,
-# so any fallback would do it. Strict mode keeps the flag set in config.yml.
+# `mimo-v2.6-flash` and `deepseek-v4.1-flash` are role primaries and fallbacks,
+# so the active model itself triggers it. Strict mode keeps the flag set in config.yml.
 export PI_STRICT_EDIT_MODE=1
 eval "$(omp completions zsh 2>/dev/null)"
 zstyle ':completion:*' menu select
