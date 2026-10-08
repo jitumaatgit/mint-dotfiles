@@ -27,3 +27,5 @@ require("custom.trouble-fetch-fix").setup()
 require("custom.omp-prompt").setup()
 -- Open random note from ~/notes
 require("custom.random-note")
+-- Seed new vault notes with their creation-day daily note
+require("custom.daily-related-link").setup()

@@ -210,6 +210,7 @@ return {
 
       client:open_note(note, { sync = true })
       vim.api.nvim_buf_set_lines(0, -1, -1, false, content)
+      require("custom.daily-related-link").append()
     end, { nargs = "?", range = true, desc = "Extract selected text into a new note" })
   end,
 }
