@@ -1,0 +1,286 @@
+#!/usr/bin/env bash
+# nvim-tangent-capture -- capture a tangent into the vault from outside nvim.
+#
+# This is the entry point for everything that is not `<leader>nT`: the Cinnamon
+# hotkey, the wezterm binding, a tmux binding, a shell alias. It finds the
+# editor you are actually looking at and asks it to open the capture float, so
+# the write path and the format stay in exactly one place
+# (~/.config/nvim/lua/custom/tangent-capture.lua).
+#
+# Run `nvim-tangent-capture --diagnose` to see which editor it would pick.
+#
+# --- Why finding the right nvim is not a one-liner ---------------------------
+#
+# Nvim is a client-server program (see `:h tui.txt`): running `nvim` starts a
+# builtin *UI client*, which starts a `nvim --embed` *server* as a child. The
+# server holds the buffers, loads the config, runs this module, and owns the
+# socket; the client owns the terminal and has no socket at all.
+#
+# So neither of the two obvious heuristics works:
+#   * "the socket owner is the editor"  -- true, but it is not the process that
+#     looks like an editor. It has no controlling terminal (`tty_nr` 0, `tpgid`
+#     -1 in /proc/<pid>/stat), exactly like an unrelated hidden `nvim --embed`
+#     spawned by other tooling. Filtering on "has a tty" therefore rejects the
+#     one socket that matters and, worse, a naive scan can pick a *different*
+#     hidden server and open the float somewhere nobody can see it.
+#   * "the pane's pid is the editor"    -- in the client-server build the pane's
+#     pid is the *client*, which has no socket.
+#
+# What does work is process ancestry: a socket is the right one when its owner
+# is the tmux pane's process or a descendant of it (pane -> client -> server).
+# Lineage is also what makes several sessions distinguishable, so no
+# cooperation from the nvim side is needed beyond the socket it already has.
+#
+# Resolution order:
+#   1. $NVIM                        -- we are inside nvim's :terminal
+#   2. the tmux pane running nvim   -- attached/active pane first
+#   3. any editor with a terminal   -- the only one, newest first if several
+#   4. start one                    -- a new window, float already armed
+set -uo pipefail
+
+EXPR='execute("TangentCapture")'
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+diagnose=0
+verbose=0
+
+usage() {
+  command sed -n '2,14p' "$0" | command sed 's/^# \{0,1\}//'
+}
+
+case "${1:-}" in
+  -h|--help) usage; exit 0 ;;
+  --diagnose) diagnose=1; verbose=1 ;;
+  "") ;;
+  *) printf 'nvim-tangent-capture: unknown argument %s\n' "$1" >&2; usage >&2; exit 2 ;;
+esac
+
+say() { (( verbose )) && printf '%s\n' "$*" >&2; return 0; }
+
+# --- process and socket helpers ---------------------------------------------
+
+# The pid in a server address. nvim builds generated addresses as
+# `stdpath("run")/<name>.<pid>.<counter>` (see :h serverstart()), so the name is
+# a shortcut to the owner that costs nothing.
+socket_pid() {
+  local base="${1##*/}"
+  base="${base#nvim.}"
+  printf '%s' "${base%%.*}"
+}
+
+# Strip the parenthesised comm field first: it may contain spaces, which would
+# shift every column after it. Fields then start at the process state.
+proc_field() {
+  command sed -e 's/^[0-9]* ([^)]*) //' "/proc/$1/stat" 2>/dev/null | command awk -v f="$2" '{print $f}'
+}
+
+proc_parent() { proc_field "$1" 2; }
+has_tty() { local tty; tty="$(proc_field "$1" 5)"; [[ -n "$tty" && "$tty" != 0 ]]; }
+
+# An editor the user can see. Either it owns a terminal itself (single-process
+# builds) or its parent does (this build, where the parent is the UI client).
+lineage_visible() {
+  local pid="$1" depth=0
+  while [[ -n "$pid" && "$pid" != 0 && $depth -lt 2 ]]; do
+    has_tty "$pid" && return 0
+    pid="$(proc_parent "$pid")"
+    depth=$((depth + 1))
+  done
+  return 1
+}
+
+# Is `ancestor` the process itself or one of its ancestors?
+lineage_has() {
+  local pid="$1" want="$2" depth=0
+  while [[ -n "$pid" && "$pid" != 0 && $depth -lt 12 ]]; do
+    [[ "$pid" == "$want" ]] && return 0
+    pid="$(proc_parent "$pid")"
+    depth=$((depth + 1))
+  done
+  return 1
+}
+
+# Owner of a socket, trustworthy even if the naming convention ever changes:
+# fall back to asking the server when the pid in the name is not alive.
+owner_pid() {
+  local pid
+  pid="$(socket_pid "$1")"
+  if kill -0 "$pid" 2>/dev/null; then
+    printf '%s' "$pid"
+    return 0
+  fi
+  pid="$(timeout 3 nvim --server "$1" --remote-expr 'getpid()' 2>/dev/null)"
+  [[ "$pid" =~ ^[0-9]+$ ]] && printf '%s' "$pid"
+}
+
+# Ask the server to open the float. Returns non-zero for a stale socket file, a
+# server whose session predates this feature, or a wedged process; `timeout` so
+# a hung nvim cannot hang the hotkey.
+fire_socket() {
+  local sock="$1"
+  [[ -n "$sock" && -S "$sock" ]] || return 1
+  timeout 3 nvim --server "$sock" --remote-expr "$EXPR" >/dev/null 2>&1
+}
+
+# Read-only reachability, for --diagnose: opening a float to find out which
+# editor *would* be used is not a diagnostic, it is the feature. `exists()`
+# returns 2 for a user command, which doubles as "this nvim has the module
+# loaded" -- a session started before this was installed answers 0, and that is
+# worth saying rather than reporting a bare failure.
+ping_socket() {
+  local sock="$1" out
+  [[ -n "$sock" && -S "$sock" ]] || return 1
+  out="$(timeout 3 nvim --server "$sock" --remote-expr 'exists(":TangentCapture")' 2>/dev/null)"
+  if [[ "$out" != 2 ]]; then
+    say "  $sock: answered, but has no :TangentCapture (started before this was installed?)"
+    return 1
+  fi
+  return 0
+}
+
+attempt_socket() {
+  if (( diagnose )); then
+    ping_socket "$1"
+  else
+    fire_socket "$1"
+  fi
+}
+
+# --- resolution --------------------------------------------------------------
+
+sockets=()
+owners=()
+
+collect_sockets() {
+  local sock pid
+  for sock in "$runtime_dir"/nvim.*; do
+    [[ -S "$sock" ]] || continue
+    pid="$(owner_pid "$sock")"
+    if [[ -z "$pid" ]]; then
+      say "$sock: no live owner (stale)"
+      continue
+    fi
+    sockets+=("$sock")
+    owners+=("$pid")
+    say "candidate $sock pid $pid"
+  done
+}
+
+# Pane lines ordered most-interesting-first: attached and focused panes before
+# panes in detached sessions.
+panes_by_rank() {
+  tmux list-panes -a -F '#{?session_attached,0,2} #{?window_active,0,1} #{?pane_active,0,1} #{pane_id} #{pane_pid}' 2>/dev/null |
+    command awk '{ rank = ($1 == 0 && $2 == 0 && $3 == 0) ? 0 : ($1 == 0 ? 1 : 2); print rank, $4, $5 }' |
+    command sort -n -k1,1
+}
+
+resolve_socket() {
+  collect_sockets
+
+  if [[ -n "${NVIM:-}" ]]; then
+    say "\$NVIM: $NVIM"
+    if attempt_socket "$NVIM"; then
+      printf '%s' "$NVIM"
+      return 0
+    fi
+    say "\$NVIM did not answer; falling through"
+  fi
+
+  if tmux list-panes -a >/dev/null 2>&1; then
+    local rank pane_id pane_pid i
+    while read -r rank pane_id pane_pid; do
+      [[ -n "${pane_pid:-}" ]] || continue
+      for i in "${!sockets[@]}"; do
+        if lineage_has "${owners[i]}" "$pane_pid"; then
+          say "tmux $pane_id pid $pane_pid (rank $rank) -> ${sockets[i]} pid ${owners[i]}"
+          if attempt_socket "${sockets[i]}"; then
+            printf '%s' "${sockets[i]}"
+            return 0
+          fi
+        fi
+      done
+    done < <(panes_by_rank)
+  else
+    say "tmux: no server"
+  fi
+
+  # No tmux, or no pane with an editor in it. Any editor whose process tree
+  # reaches a terminal qualifies; if there are several, the newest wins, because
+  # the alternative -- refusing -- helps nobody.
+  local -a ordered=()
+  local pid
+  while read -r pid; do
+    for i in "${!owners[@]}"; do
+      [[ "${owners[i]}" == "$pid" ]] || continue
+      if lineage_visible "$pid"; then
+        ordered+=("${sockets[i]}")
+        say "standalone ${sockets[i]} pid $pid"
+      else
+        say "${sockets[i]} pid $pid: no terminal in its lineage; skipped"
+      fi
+    done
+  done < <(printf '%s\n' "${owners[@]}" | command sort -nr)
+
+  (( ${#ordered[@]} > 1 )) && say "${#ordered[@]} standalone editors; trying newest first"
+  local sock
+  for sock in "${ordered[@]}"; do
+    if attempt_socket "$sock"; then
+      printf '%s' "$sock"
+      return 0
+    fi
+  done
+
+  say "no reachable editor"
+  return 1
+}
+
+# --- main --------------------------------------------------------------------
+
+chosen="$(resolve_socket)" || true
+
+if [[ -n "$chosen" ]]; then
+  say "chosen: $chosen"
+  if (( diagnose )); then
+    printf 'nvim-tangent-capture: would capture in %s\n' "$chosen"
+    exit 0
+  fi
+  exit 0
+fi
+
+if (( diagnose )); then
+  printf 'nvim-tangent-capture: no running editor; a new one would be started\n'
+  exit 0
+fi
+
+# Nothing is running. Start an editor whose only job is the float, and have it
+# quit when the tangent is saved or cancelled (`:TangentCapture!`).
+nvim_cmd=(nvim -c 'lua require("custom.tangent-capture").capture({ oneshot = true })')
+
+if ! command -v nvim >/dev/null 2>&1; then
+  command -v notify-send >/dev/null 2>&1 &&
+    notify-send -a tangent "Tangent not captured" "nvim is not installed."
+  exit 1
+fi
+
+if [[ -t 0 && -t 1 ]]; then
+  # We own a terminal (the hotkey was pressed from a shell): take it over.
+  exec "${nvim_cmd[@]}"
+fi
+
+if [[ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v wezterm >/dev/null 2>&1; then
+  # --cwd so the placeholder editor does not inherit a random directory. No
+  # --always-new-process: handing the spawn to the running GUI is faster and
+  # still ends in its own window.
+  exec wezterm start --cwd "$HOME" -- "${nvim_cmd[@]}"
+fi
+
+if [[ -n "${DISPLAY:-}" ]] && command -v x-terminal-emulator >/dev/null 2>&1; then
+  exec x-terminal-emulator -e "${nvim_cmd[@]}"
+fi
+
+if command -v notify-send >/dev/null 2>&1; then
+  notify-send -a tangent "Tangent not captured" "No running nvim, and no terminal available to start one."
+else
+  printf 'nvim-tangent-capture: no running nvim, and no terminal available to start one\n' >&2
+fi
+exit 1
