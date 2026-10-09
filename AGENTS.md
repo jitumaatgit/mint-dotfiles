@@ -17,6 +17,21 @@ Single-context layout: one `CONTEXT.md` + `docs/adr/` at the repo root. See `doc
 
 ### Neovim config integration
 
+Nvim on this build is a **client-server pair**, documented in `:h tui.txt`: running `nvim` starts the builtin **UI client** (owns the terminal, has **no** socket) which starts a **`nvim --embed` server** child (loads the config, holds the buffers, owns the socket). Anything that talks to a running nvim has to account for that, and every obvious heuristic gets it wrong.
+- The socket is named `$XDG_RUNTIME_DIR/nvim.<pid>.<counter>` (`:h serverstart()`), and the pid in the name is the **server's**. The process `ps` shows for the pane — the client — has no socket at all.
+- So **do not select a socket by "has a controlling tty"**. The server reports `tty_nr` 0 and `tpgid` -1, which is indistinguishable from an unrelated hidden `nvim --embed` that other tooling may spawn; a float opened in one of those is invisible. Match the socket's owner against the tmux pane's process tree by **ancestry** (`pane → client → server`) instead. `~/.local/bin/nvim-tangent-capture --diagnose` prints that decision.
+- `nvim --server <sock> --remote-expr …` loads the **user's config** in its own process, so it fires `VimEnter` hooks and leaves a dead `nvim.<pid>.0` socket in `$XDG_RUNTIME_DIR` behind. Stale socket files therefore accumulate; `kill -0` on the name's pid *and* a real round trip are both required before trusting one.
+- `serverstart()` in a TUI session produces a **second** socket (counter `.1`), not the first: the server already publishes `.0` so that `:detach` can reattach to it later.
+- **Insert mode is not per-window.** Closing a floating window that was in insert mode leaves the window underneath in insert mode, so the next keystrokes land in the note. Enter a float with `startinsert` and `stopinsert` on close — and note that `stopinsert` is deferred, so a test must assert the mode after a wait rather than immediately.
+
+### Tangent capture
+
+`<leader>nT` in nvim, `<Super>t` on the desktop, and `Ctrl+Space Shift+T` in wezterm all append a tangent to today's daily note's `## Tangent Parking Lot` without leaving the current note. Workflow, config knobs and troubleshooting: `docs/guide/tangent-capture.md`. Self-check: `home/.config/nvim/lua/custom/tangent-capture_test.lua`, run by `./smoke.sh`.
+- That section is the inbox, deliberately, instead of a new file: the weekly note template and `~/notes/scripts/extract_weekly_tangents.py` already read exactly it.
+- Timestamps are **local time**. Every other date in the vault — daily-note filenames, `## Log` — is local, and a UTC stamp dates an evening tangent to the next day.
+- Entries go after the section's last non-blank line, not directly under the heading: a trailing `### Goal:` heading then captures the entry, which is how the weekly note groups them, and the blank line before the next `##` heading stays put.
+- The write goes **through the buffer** when the target file is already open in one (writing the file underneath would make its next `:w` silently revert the tangent), and through a temp-file + rename otherwise so a crash cannot truncate a note.
+
 ### home-git (`~/.home-git`)
 
 Versions everything in `$HOME` this repo does not own. No remote by design. Full workflow in `docs/guide/home-git.md`.
@@ -56,6 +71,14 @@ For logging who changes a key cross-process (`~/.local/bin/touchpad-watch.sh`, `
 - Each write produces **two** `Change` calls: the client, then dconf-service relaying it. Comparing against the previous value collapses the pair into one log line.
 - Resolve `sender` to a PID **first**, before any sleeping or other work: `gsettings` and similar short-lived clients have already exited by then, so a delayed lookup only ever yields a bare bus name. `busctl --user status :1.N | sed -n 's/^PID=//p'`, then read `/proc/$PID/comm`.
 
+### Desktop hotkeys
+
+Cinnamon custom keybindings are the convention for OS-level hotkeys here (`custom1` = `<Super>q` → wezterm; `custom2` = `<Super>t` → nvim-tangent-capture, installed by `patches/apply-cinnamon-tangent-keybinding.sh`).
+- Registration is **two** writes: the slot's own relocatable schema path (`org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/customN/`) and membership in `org.cinnamon.desktop.keybindings custom-list`. A slot that is configured but absent from `custom-list` is inert, and looks configured.
+- `gsettings get` returns the value with GVariant's syntax attached: strings come back quoted (`'/path/to/thing'`), lists bracketed (`['<Super>t']`). Comparing a read-back string against a bare path always fails.
+- The command runs as the **user**, with the session's `DISPLAY` and `PATH`. That is why this beat keyd for the job: keyd's `command()` bindings run as root, so reaching a socket in `$XDG_RUNTIME_DIR` would mean dropping privileges and rebuilding the environment first.
+- It is unversioned state (dconf, not this repo), so `--check` is the only thing that notices drift or a binding that was never applied. `./smoke.sh` runs it.
+
 ### systemd user units that need root
 
 - This machine has `mint ALL=(ALL) NOPASSWD:ALL` in `/etc/sudoers.d/mint`, so a user unit can `sudo` with no prompt. A unit that lost its `sudo` — this one was installed from a stripped copy — fails silently against root-owned sysfs and looks like it did nothing.
@@ -88,3 +111,16 @@ Cinnamon layers the selected theme over its **own dark stylesheet**: `Main.loadT
 
 - `~/notes` has two writers: this machine and phone Obsidian sync. Expect non-fast-forward, merge rather than force-push, and never force-push `main`.
 - Its remote is `origin`. It was previously named `main`, which made `git push origin` fail confusingly — do not reintroduce a branch-named remote.
+
+### Rootless Docker (installed 2026-10-08)
+
+Installed from Docker's **upstream apt repo on the `noble` branch** (Mint 22.3 is Ubuntu 24.04 — `ID_LIKE=ubuntu`, `UBUNTU_CODENAME=noble`), key verified against the published fingerprint before being trusted. Rootless only: rootful `docker.service`/`docker.socket` **and** the system `containerd.service` are disabled; only the user unit runs. `docker-ce` 29.9.0, containerd 2.4.1, buildx 0.38.0, compose 5.6.0.
+
+- **The package postinstall starts the rootful daemon once, before you can disable it.** That start left a host `docker0` (172.17.0.1/16) and a stale `/var/run/docker.sock` behind even after `systemctl disable --now docker`. Both are leftovers, not the rootless plumbing: the rootless bridge and its veths live in a **detached netns**. Read `/proc/<rootlesskit-holder>/net/dev` to see it — it lists `lo tap0 docker0`, while the host namespace's copy showed **no** ports attached. `ss -lx` is what separates a stale socket file from a live listener; the socket file alone proves nothing.
+- **`--detach-netns` puts `dockerd` itself in the host netns**, so `docker0` existing on the host cannot be read as "the rootless bridge is here". Only veths answer that (`ip -br link show master docker0` stayed empty for a running rootless container).
+- **`net.ipv4.ping_group_range` defaults to `1 0`, an empty range**, so ICMP sockets fail inside a rootless container while DNS and TCP work perfectly. `ping` reports 100% packet loss and looks like a routing outage; `wget` on the same container returns OK. Fixed with `/etc/sysctl.d/99-docker-rootless.conf`: `net.ipv4.ping_group_range = 0 2147483647` and `net.ipv4.ip_unprivileged_port_start = 0` (the latter is what allows publishing ports below 1024 — verified by binding host `127.0.0.1:80` from a container). Both are host-wide, not per-container.
+- **Published ports default to loopback** via `~/.config/docker/daemon.json` → `{"ip": "127.0.0.1"}`. Verified with `ss`: a plain `-p 8099:80` listens on `127.0.0.1:8099`, an explicit `-p 0.0.0.0:8098:80` on `0.0.0.0:8098`. ufw's `deny (incoming)` does **not** protect rootless publishing — rootlesskit binds the host socket itself, outside the daemon's netns — so this config, not the firewall, is the control.
+- **Native `overlayfs` works** on this kernel (7.0.0-38-generic supports unprivileged overlay mounts), so `fuse-overlayfs` is installed but unused. `docker info` reports `driver=overlayfs`; if it ever silently falls back to fuse, that is a kernel change, not a Docker change.
+- **`DOCKER_HOST` is exported in `home/.zshrc`**, derived from `XDG_RUNTIME_DIR` rather than a hardcoded uid. Consequence to remember: while it is set, `docker context use` no longer changes which daemon the CLI talks to — non-CLI tools (compose, testcontainers) are the reason it is there.
+- **Boot start is linger, not `enable`.** `systemctl --user enable docker` plus `Linger=yes` for the user is what starts it without a login; the unit alone only starts at login.
+- The setuptool refuses to run without `XDG_RUNTIME_DIR` once systemd is detected, so a non-login shell needs: `XDG_RUNTIME_DIR=/run/user/1001 DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1001/bus dockerd-rootless-setuptool.sh install`.
