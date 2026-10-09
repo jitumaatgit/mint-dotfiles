@@ -29,3 +29,6 @@ require("custom.omp-prompt").setup()
 require("custom.random-note")
 -- Seed new vault notes with their creation-day daily note
 require("custom.daily-related-link").setup()
+-- Capture a tangent into today's `## Tangent Parking Lot` without leaving the
+-- note you are in (`<leader>nT`, or the system-wide nvim-tangent-capture).
+require("custom.tangent-capture").setup()
