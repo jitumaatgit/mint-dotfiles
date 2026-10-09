@@ -30,6 +30,33 @@ if ! python3 "$REPO_ROOT/home/.config/wezterm/quick_select_test.py"; then
   exit 1
 fi
 
+# The tangent capture module is deliberately vanilla Lua, so it can be checked
+# with no plugins in the way. -i NONE as well as -u NONE: the test asserts that
+# registers come out untouched, which only means something if it is not
+# starting from the machine's shada.
+echo "🧪 Running tangent-capture self-check"
+if ! nvim --headless -u NONE -i NONE -l "$REPO_ROOT/home/.config/nvim/lua/custom/tangent-capture_test.lua"; then
+  echo "🚫 tangent-capture self-check failed"
+  exit 1
+fi
+
+# The system-wide trigger picks an editor by process ancestry. --diagnose is the
+# read-only form of that path: it must run and must not open a float while
+# looking. It exits 0 even with no editor running, which is a valid state.
+echo "🧪 Running nvim-tangent-capture resolution check"
+if ! "$REPO_ROOT/home/.local/bin/nvim-tangent-capture" --diagnose >/dev/null 2>&1; then
+  echo "🚫 nvim-tangent-capture --diagnose failed"
+  exit 1
+fi
+
+# The hotkey lives in dconf, outside this repo, so --check is the only thing
+# that notices it drifting or never having been applied at all.
+echo "🧪 Checking Cinnamon tangent keybinding"
+if ! "$REPO_ROOT/patches/apply-cinnamon-tangent-keybinding.sh" --check; then
+  echo "🚫 tangent keybinding not registered; run patches/apply-cinnamon-tangent-keybinding.sh"
+  exit 1
+fi
+
 
 # The Chicago95 Cinnamon override has to stay applied to the theme, not just to
 # a copy of it. --check is a pure read and exits 1 when the live stylesheet has
