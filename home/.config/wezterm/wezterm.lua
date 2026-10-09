@@ -369,6 +369,16 @@ wezterm.on("move-pane-split-right", function(window, pane)
 	show_move_pane_selector(window, pane, "Right")
 end)
 
+-- Tangent capture: run the script that finds the running nvim and asks it to
+-- open its capture float. background_child_process() rather than
+-- SpawnCommand -- the script talks to an editor that is already up and returns
+-- immediately, so there is nothing to wait for and no shell to involve.
+wezterm.on("tangent-capture", function()
+	wezterm.background_child_process({
+		(os.getenv("HOME") or "") .. "/.local/bin/nvim-tangent-capture",
+	})
+end)
+
 -- Keybinds
 config.leader = { key = "Space", mods = "CTRL", timeout_milliseconds = 4294967295 }
 -- Main key assignments
@@ -427,6 +437,7 @@ config.keys = {
 	-- launchers
 	{ key = "a", mods = "LEADER", action = act.ShowLauncher },
 	{ key = "t", mods = "LEADER", action = act.ShowTabNavigator },
+	{ key = "T", mods = "LEADER|SHIFT", action = act.EmitEvent("tangent-capture") },
 	-- Copy mode
 	{ key = "[", mods = "LEADER", action = act.ActivateCopyMode },
 	{ key = "]", mods = "LEADER", action = act.CopyTo("ClipboardAndPrimarySelection") },
