@@ -345,3 +345,7 @@ shellMinimizer:
   sourceOutlineLevel: default
 ratchet:
   enabled: true
+mcp:
+  notifications: true
+  enableProjectConfig: false
+  renderMarkdownResults: true
