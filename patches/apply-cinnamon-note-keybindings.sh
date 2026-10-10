@@ -13,9 +13,12 @@
 #   <Super>d   nvim-daily-note               go to (or focus) today's daily note
 #   <Super>a   nvim-daily-note capture       add a task or a log entry to it
 #
-# The keys are free: no gsettings keybinding schema (Cinnamon, muffin, GNOME,
-# metacity) binds a bare <Super>a, <Super>d or <Super>t. The nearest match,
-# <Super>Tab, is a different key.
+# <Super>a and <Super>t are the free ones: no gsettings keybinding schema
+# (Cinnamon, muffin, GNOME, metacity) binds a bare <Super>a or <Super>t.
+# <Super>d is NOT free -- org.cinnamon.desktop.keybindings.wm show-desktop
+# already claims it -- but the custom keybinding wins in practice, which is the
+# only reason this can bind it. Do not read the <Super>d line as proof that a
+# third key is available; check the wm and media-keys schemas first.
 #
 # One script rather than three: the slot bookkeeping (custom-list ordering,
 # matching a slot by its command so re-ordering does not strand a binding) is
