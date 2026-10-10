@@ -308,6 +308,14 @@ export SYSTEMD_COLORS=1
 
 export PATH="$HOME/.cargo/bin:$HOME/.local/bin:$HOME/.bun/bin:$PATH"
 
+# jobsparser-fork venv: make `python` resolve to the project interpreter.
+# omp's debug device spawns the debugpy adapter as `python` (not `python3`),
+# and only the venv has the project's deps (textual, rich, jobspy, pandas).
+# Guarded so re-sourcing cannot grow PATH without bound.
+_jobsparser_venv="$HOME/projects/jobsparser-fork/.venv/bin"
+[[ -d "$_jobsparser_venv" && ":$PATH:" != *":$_jobsparser_venv:"* ]] && export PATH="$_jobsparser_venv:$PATH"
+unset _jobsparser_venv
+
 # Docker (rootless). The daemon runs as this user, so its socket lives in the
 # per-user runtime dir, not /run/docker.sock. DOCKER_HOST is set here rather
 # than relying on `docker context use rootless` because non-CLI tools (compose,

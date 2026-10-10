@@ -25,14 +25,6 @@ fi
 if [ -d "$HOME/.local/bin" ]; then
   PATH="$HOME/.local/bin:$PATH"
 fi
-# jobsparser-fork venv: make `python` resolve to the project interpreter.
-# omp's debug device spawns the debugpy adapter as `python` (not `python3`).
-if [ -d "$HOME/projects/jobsparser-fork/.venv/bin" ]; then
-  case ":$PATH:" in
-    *":$HOME/projects/jobsparser-fork/.venv/bin:"*) ;;
-    *) PATH="$HOME/projects/jobsparser-fork/.venv/bin:$PATH" ;;
-  esac
-fi
 
 # Default browser for CLI tools
 export BROWSER="zen-browser"
