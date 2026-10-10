@@ -11,10 +11,13 @@ hides it, from anywhere in the Cinnamon session.
 | `copyq toggle` | any shell | the same, from a terminal |
 | `<Super>t` | `<Super>d`, `<Super>a` | the note hotkeys, unrelated |
 
-## The two things that have to be true
+## What has to be true
 
-A bound key by itself is not the feature. Both of these have to hold, and
-`patches/apply-cinnamon-copyq-keybinding.sh --check` verifies both:
+A bound key by itself is not the feature. Three things have to hold. `--check`
+verifies all three; `apply` checks the two that are about this machine, CopyQ
+being installed and the autostart entry being deployed, *before* it writes the
+keybinding, so a machine that cannot honour the hotkey is left with no
+keybinding rather than a dead one.
 
 1. **The keybinding.** Cinnamon custom keybinding slots are numbered
    (`custom1`, `custom2`, ...) and the live list of them is a *separate* key,
@@ -27,8 +30,13 @@ A bound key by itself is not the feature. Both of these have to hold, and
    hotkey that silently does nothing after the next login, which reads as "the
    hotkey broke" rather than "CopyQ is not running". The entry is deployed by
    stow from `home/.config/autostart/copyq.desktop`.
+3. **CopyQ installed.** The command the key runs has to exist on the machine at
+   all. It is a bare name on `PATH`, not a script this repo versions, so the
+   check is `command -v` rather than the `-x` test the note script can use.
+   `apply` dies with `copyq is not installed` *before* the first dconf write,
+   so a machine without it is left with no keybinding rather than a dead one.
 
-That second half is why the drag of a bad `--check` is worth it: the failure is
+The autostart half is why a bad `--check` is worth the drag: the failure is
 invisible at the moment you configure it and only appears at the next reboot.
 
 ## Applying

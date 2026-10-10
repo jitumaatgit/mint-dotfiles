@@ -20,7 +20,8 @@
 # here. With no CopyQ instance running, `copyq toggle` exits 1 ("Cannot connect
 # to server"), so a bound key alone produces a hotkey that silently does nothing
 # after the next login. The XDG autostart entry that starts CopyQ is therefore
-# part of this contract, and --check verifies it. It is deployed by stow from
+# part of this contract: apply refuses to write the key without it, and
+# --check verifies it. It is deployed by stow from
 # home/.config/autostart/copyq.desktop, not written by this script: writing it
 # here would write through the stow symlink into the repo, and the next
 # `stow -R` would then report the repo dirty.
@@ -119,6 +120,28 @@ check_autostart() {
   return 0
 }
 
+# The command has to exist on this machine at all. The note script can test
+# this with [[ -x ]] because its commands are absolute paths under $HOME; this
+# one is a bare name, so it needs the PATH lookup instead.
+check_installed() {
+  local command="$1"
+  command -v "${command%% *}" >/dev/null ||
+    die "copyq keybinding: ${command%% *} is not installed"
+}
+
+# Both halves of the contract, for apply(). --check reports the same two
+# things, but only after establishing that the slot exists; apply needs them
+# as a precondition, because it is the path that would otherwise write a
+# keybinding pointing at a command this machine does not have at all.
+check_prerequisites() {
+  local row command
+  for row in "${BINDINGS[@]}"; do
+    command="${row#*|}"; command="${command#*|}"
+    check_installed "$command"
+  done
+  check_autostart
+}
+
 check_one() {
   local key="$1" want_name="$2" command="$3" slots slot
   slots="$(collect_slots)"
@@ -132,8 +155,7 @@ check_one() {
     die "copyq keybinding: $slot bound to $(slot_value "$slot" binding), expected ['${key}']"
   [[ "$(slot_string "$slot" name)" == "$want_name" ]] ||
     die "copyq keybinding: $slot named $(slot_string "$slot" name), expected $want_name"
-  command -v "${command%% *}" >/dev/null ||
-    die "copyq keybinding: ${command%% *} is not installed"
+  check_installed "$command"
   check_autostart ||
     die "copyq keybinding: autostart entry not deployed"
   printf 'copyq keybinding: %s -> %s (slot %s)\n' "$key" "$command" "$slot"
@@ -146,8 +168,9 @@ apply() {
   # slot per line; read -a would put the whole list into element 0.
   mapfile -t slots < <(collect_slots)
 
-  # Precondition before any dconf write: no CopyQ, no working hotkey.
-  check_autostart
+  # Precondition before any dconf write, and not something only --check covers:
+  # the path that writes the binding is the one that must refuse to write it.
+  check_prerequisites
 
   for row in "${BINDINGS[@]}"; do
     key="${row%%|*}"
