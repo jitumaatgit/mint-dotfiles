@@ -1,0 +1,152 @@
+#!/usr/bin/env bash
+# nvim-daily-note -- go to today's daily note, or capture into it, from outside
+# nvim.
+#
+# The system-wide counterpart to `:DailyNote` and `:DailyNoteCapture`:
+#
+#   nvim-daily-note                    open (or focus) today's daily note
+#   nvim-daily-note open               the same, spelled out
+#   nvim-daily-note capture            float for a task or a log entry
+#   nvim-daily-note capture task|log   the same, starting in that mode
+#   nvim-daily-note task|log           shorthand for the two lines above
+#   nvim-daily-note --diagnose         report which editor it would use
+#
+# With no editor running it starts one: `open` leaves a session you can work
+# in, `capture` starts a placeholder that quits when the entry is saved or
+# cancelled, exactly as nvim-tangent-capture does.
+#
+# Reaching an editor is only half the job. The capture opens on the window
+# already showing the daily note, that window's terminal is raised, and the
+# outcome is reported by notification -- a keybinding has no terminal to print
+# to, and a hotkey that says nothing reads as one that did nothing.
+#
+# Finding the editor is shared and lives in ~/.local/lib/nvim-editor-socket.sh;
+# the section each entry belongs to and how it is spelled live in nvim
+# (~/.config/nvim/lua/custom/daily-note.lua), so this script picks a target and
+# nothing else.
+set -uo pipefail
+
+action="open"
+mode=""
+
+LIB="${HOME}/.local/lib/nvim-editor-socket.sh"
+if [[ ! -r "$LIB" ]]; then
+  printf 'nvim-daily-note: %s is missing (stow not run?)\n' "$LIB" >&2
+  exit 1
+fi
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  # The usage block and nothing after it: the paragraph below it is prose, and
+  # a range that runs past it prints a half-sentence.
+  command sed -n '7,12p' "$0" | command sed 's/^# \{0,1\}//'
+}
+
+# The only channel a Cinnamon hotkey has back to the user. The script's stdout
+# goes nowhere -- a keybinding is not a terminal -- so without this the whole
+# feature is silent: a capture that lands in a window nobody is looking at
+# reads exactly like one that never happened.
+notify() {
+  command -v notify-send >/dev/null 2>&1 || return 0
+  notify-send -a daily-note "$1" "${2:-}"
+  return 0
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --diagnose)
+      diagnose=1
+      verbose=1
+      ;;
+    open)
+      action="open"
+      ;;
+    capture)
+      action="capture"
+      ;;
+    task|log)
+      action="capture"
+      mode="$1"
+      ;;
+    *)
+      printf 'nvim-daily-note: unknown argument %s\n' "$1" >&2
+      usage >&2
+      exit 2
+      ;;
+  esac
+  shift
+done
+
+if [[ "$action" == "capture" ]]; then
+  verb="capture"
+  mode_suffix="${mode:+ $mode}"
+  # An editor that is already running gets no bang. The bang means "quit when the
+  # entry is saved or cancelled", which is only true of a placeholder editor this
+  # script starts itself -- with it, pressing <Esc> in the float would run :qa!
+  # in the session you are working in.
+  EXPR="execute(\"DailyNoteCapture${mode_suffix}\")"
+  cold_start=(nvim -c "DailyNoteCapture!${mode_suffix}")
+else
+  verb="open"
+  EXPR='execute("DailyNote")'
+  cold_start=(nvim -c 'DailyNote')
+fi
+# The command that has to exist for a socket to be worth using: the capture
+# float and the daily note itself come from the same module.
+PING='exists(":DailyNote")'
+
+# --- main --------------------------------------------------------------------
+
+chosen="$(nvim_editor_socket "$EXPR" "$PING")" || true
+
+if [[ -n "$chosen" ]]; then
+  say "chosen: $chosen"
+  if (( diagnose )); then
+    printf 'nvim-daily-note: would %s in %s\n' "$verb" "$chosen"
+    exit 0
+  fi
+  # Terminal raised, capture fired: say so, so the hotkey never has to be
+  # believed blindly.
+  if [[ "$action" == "capture" ]]; then
+    notify "Daily note capture" "${mode:+${mode^} }float opened in your nvim."
+  else
+    notify "Daily note" "Opened today's note."
+  fi
+  exit 0
+fi
+
+if (( diagnose )); then
+  printf 'nvim-daily-note: no running editor; a new one would be started\n'
+  exit 0
+fi
+
+if ! command -v nvim >/dev/null 2>&1; then
+  notify "Daily note not opened" "nvim is not installed."
+  exit 1
+fi
+
+if [[ -t 0 && -t 1 ]]; then
+  # We own a terminal (the hotkey was pressed from a shell): take it over.
+  exec "${cold_start[@]}"
+fi
+
+# Nothing was running, so there is no window to bring forward: the one that opens
+# here takes focus on its own and *is* the feedback.
+if [[ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ]] && command -v wezterm >/dev/null 2>&1; then
+  # --cwd so the editor does not inherit a random directory. No
+  # --always-new-process: handing the spawn to the running GUI is faster and
+  # still ends in its own window.
+  exec wezterm start --cwd "$HOME" -- "${cold_start[@]}"
+fi
+
+if [[ -n "${DISPLAY:-}" ]] && command -v x-terminal-emulator >/dev/null 2>&1; then
+  exec x-terminal-emulator -e "${cold_start[@]}"
+fi
+
+notify "Daily note not opened" "No running nvim, and no terminal available to start one."
+exit 1

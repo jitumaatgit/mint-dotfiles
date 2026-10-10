@@ -32,6 +32,29 @@ Nvim on this build is a **client-server pair**, documented in `:h tui.txt`: runn
 - Entries go after the section's last non-blank line, not directly under the heading: a trailing `### Goal:` heading then captures the entry, which is how the weekly note groups them, and the blank line before the next `##` heading stays put.
 - The write goes **through the buffer** when the target file is already open in one (writing the file underneath would make its next `:w` silently revert the tangent), and through a temp-file + rename otherwise so a crash cannot truncate a note.
 
+### Daily note navigation and capture
+
+`<leader>nD` / `<Super>d` / `Leader d` go to today's daily note; `<leader>nA` / `<Super>a` / `<Leader>D` append a task or log entry to it. Workflow, config knobs and troubleshooting: `docs/guide/daily-note.md`. Self-check: `home/.config/nvim/lua/custom/daily-note_test.lua`, run by `./smoke.sh`.
+- The capture float has **two modes and one keystroke**: `<Tab>` switches Task (`#### Tasks`, a `- [ ]` checkbox) and Log (`## Log`, a `- **HH:MM**` line). Which section an entry lands in is never a question in the UI, so a hotkey press cannot land in the wrong place.
+- Going to the note means **focusing the window that already shows it**, not `:edit`. `:edit` on an already-displayed note leaves the same buffer in two windows, which then diverge on the next save of either. A loaded-but-hidden buffer goes in the current window instead.
+- Tasks are checkboxes because the vault's own tooling reads them: `task-auto-complete.lua` relocates `- [x]` lines to `## Completed` on save, and `obsidian-task-filter.lua` greps `- [ ]`.
+- All three note hotkeys (tangent, daily note, capture) share one dconf install script and one editor-resolution library. `gsettings` writes a keybinding slot's schema and its `custom-list` membership separately, so a slot that is configured but not listed is inert and looks configured — that is why the script owns both and `--check` is not optional.
+- **The capture has to focus the note's window too**, or the float opens over whatever window is current and the entry lands in a note nobody is looking at — which reads as "the hotkey did nothing" and is exactly what it looked like when `<Super>a` was pressed from another window. A *floating* window is current while it is open, so a test has to close it and assert where focus returned.
+- **A keybinding has no terminal to print to**, so a hotkey that only writes stdout is silent in both directions: you cannot tell a capture that worked from one that failed. The scripts now notify on both. And the resolution prints *exactly* the socket address, because the caller reads stdout with a command substitution — a line printed by the raise helpers would be handed on as part of that address. `./smoke.sh` asserts nothing extra reaches stdout.
+- **Never let a test redirect the vault late.** A scratch note has to be in place before the editor loads (a `daily_note_path` override in the test's `init.lua`, or `g:tangent_parking_lot_path`), not hoped for afterwards. Two runs of mine wrote test lines into the real `## Tangent Parking Lot`.
+- A **duplicate keybinding is silently dropped** by wezterm's key table, which is why `home/.config/wezterm/note_keys_test.py` loads the config and asserts no two entries claim the same key combination.
+
+### Bringing a terminal window to the front
+
+What the note hotkeys do after they reach the editor, and the only part of it that is not nvim's business (`~/.local/lib/nvim-editor-socket.sh`).
+- **`wezterm cli activate-pane` cannot raise a background window.** It activates a pane inside the *focused* GUI window and leaves `_NET_ACTIVE_WINDOW` where it was — exit 0, nothing happens. `activate-tab` is the same. The X window has to be raised directly (`xdotool windowactivate` / `wmctrl -i -a`).
+- **The only link from a wezterm pane to its X window is the title**: wezterm names a window after the tab it is showing. So pane title → `xdotool search --onlyvisible --name` → exact re-check with `getwindowname`. Ambiguity is left alone rather than guessed at; two windows can both be `nvim`.
+- **`wmctrl` zero-pads window ids and `xprop` does not.** `0x02e000f1` and `0x2e000f1` are the same window and a string comparison fails, which reads as "the raise did nothing" when it did. Compare numerically.
+- **The Desktop and conky windows are not focusable**, so `wmctrl -i -a` on one returns 0 and changes nothing. Activate a window you know is a terminal.
+- **`wezterm start` runs the command in the GUI's environment, not the caller's** — the spawn is a request to the running GUI, so an env var set on the command line never reaches the program in the pane. Test hooks that need the editor's environment have to be set another way.
+- **`nvim --remote-expr` is Vimscript**, not Lua. A Lua body must go through `execute("luafile …")`; for a single query `luaeval("…")` with `vim.fn.*` calls (VimL functions such as `bufnr` are *not* globals inside `luaeval`).
+- **`environ()` is unavailable here** (E118, too many arguments), so the server's env has to be read as `$WEZTERM_PANE` rather than `environ("WEZTERM_PANE")`.
+
 ### home-git (`~/.home-git`)
 
 Versions everything in `$HOME` this repo does not own. No remote by design. Full workflow in `docs/guide/home-git.md`.
@@ -73,7 +96,7 @@ For logging who changes a key cross-process (`~/.local/bin/touchpad-watch.sh`, `
 
 ### Desktop hotkeys
 
-Cinnamon custom keybindings are the convention for OS-level hotkeys here (`custom1` = `<Super>q` → wezterm; `custom2` = `<Super>t` → nvim-tangent-capture, installed by `patches/apply-cinnamon-tangent-keybinding.sh`).
+Cinnamon custom keybindings are the convention for OS-level hotkeys here (`custom1` = `<Super>q` → wezterm; `custom2` = `<Super>t`, `custom3` = `<Super>d`, `custom4` = `<Super>a`, all installed by `patches/apply-cinnamon-note-keybindings.sh`). One script owns all three note hotkeys, because the slot bookkeeping is the part that is easy to get subtly wrong once — and it is identical every time.
 - Registration is **two** writes: the slot's own relocatable schema path (`org.cinnamon.desktop.keybindings.custom-keybinding:/org/cinnamon/desktop/keybindings/custom-keybindings/customN/`) and membership in `org.cinnamon.desktop.keybindings custom-list`. A slot that is configured but absent from `custom-list` is inert, and looks configured.
 - `gsettings get` returns the value with GVariant's syntax attached: strings come back quoted (`'/path/to/thing'`), lists bracketed (`['<Super>t']`). Comparing a read-back string against a bare path always fails.
 - The command runs as the **user**, with the session's `DISPLAY` and `PATH`. That is why this beat keyd for the job: keyd's `command()` bindings run as root, so reaching a socket in `$XDG_RUNTIME_DIR` would mean dropping privileges and rebuilding the environment first.

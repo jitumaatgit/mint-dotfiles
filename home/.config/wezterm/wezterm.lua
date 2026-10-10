@@ -379,6 +379,23 @@ wezterm.on("tangent-capture", function()
 	})
 end)
 
+-- Daily note: go to today's note (or focus the window already showing it), and
+-- capture a task or log entry into it on the way in. Same shape as the tangent
+-- handler above: the script resolves the running editor over its RPC socket and
+-- returns immediately, so background_child_process() is all this needs.
+wezterm.on("daily-note", function()
+	wezterm.background_child_process({
+		(os.getenv("HOME") or "") .. "/.local/bin/nvim-daily-note",
+	})
+end)
+
+wezterm.on("daily-note-capture", function()
+	wezterm.background_child_process({
+		(os.getenv("HOME") or "") .. "/.local/bin/nvim-daily-note",
+		"capture",
+	})
+end)
+
 -- Keybinds
 config.leader = { key = "Space", mods = "CTRL", timeout_milliseconds = 4294967295 }
 -- Main key assignments
@@ -438,6 +455,11 @@ config.keys = {
 	{ key = "a", mods = "LEADER", action = act.ShowLauncher },
 	{ key = "t", mods = "LEADER", action = act.ShowTabNavigator },
 	{ key = "T", mods = "LEADER|SHIFT", action = act.EmitEvent("tangent-capture") },
+	-- Daily note, in the same spirit: `d` goes to today's note (focusing the
+	-- window that already has it), Shift+D captures a task or log entry into it.
+	-- <Tab> switches between the two inside the float.
+	{ key = "d", mods = "LEADER", action = act.EmitEvent("daily-note") },
+	{ key = "D", mods = "LEADER|SHIFT", action = act.EmitEvent("daily-note-capture") },
 	-- Copy mode
 	{ key = "[", mods = "LEADER", action = act.ActivateCopyMode },
 	{ key = "]", mods = "LEADER", action = act.CopyTo("ClipboardAndPrimarySelection") },
