@@ -1,6 +1,6 @@
 modelRoles:
   smol: opencode-go/mimo-v2.6-flash
-  task: opencode-go/claude-haiku-5-5:high
+  task: opencode-go/mimo-v2.6-flash:high
   commit: opencode-go/mimo-v2.6-flash:high
   tiny: opencode-go/mimo-v2.6-flash:high
   memory: opencode-go/gpt-6-luna:auto
@@ -56,14 +56,14 @@ retry:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     commit:
-      - opencode-go/claude-haiku-5-5:medium
+      - opencode-go/mimo-v2.6-flash:medium
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     tiny:
-      - opencode-go/claude-haiku-5-5
+      - opencode-go/mimo-v2.6-flash
       - opencode-go/longcat-2.5-preview-free
     memory:
-      - opencode-go/claude-haiku-5-5
+      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     slow:
@@ -326,7 +326,7 @@ modelPresets:
   step-5-preview-free-build:
     modelRoles:
       smol: opencode-go/mimo-v2.6-flash
-      task: opencode-go/claude-haiku-5-5:high
+      task: opencode-go/mimo-v2.6-flash:high
       commit: opencode-go/mimo-v2.6-flash:high
       tiny: opencode-go/mimo-v2.6-flash:high
       memory: opencode-go/gpt-6-luna:auto
