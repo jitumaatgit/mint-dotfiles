@@ -1,16 +1,17 @@
 modelRoles:
   smol: opencode-go/mimo-v2.6-flash
-  task: opencode-go/gpt-6-luna
-  commit: opencode-go/mimo-v2.6-flash
-  tiny: opencode-go/mimo-v2.6-flash
-  memory: opencode-go/mimo-v2.6-flash
-  slow: opencode-go/gpt-6-luna
-  plan: fcm-router/fcm
-  advisor: fcm-router/fcm
-  judge: opencode-go/deepseek-v4.1-flash
-  default: fcm-router/fcm:off
-  vision: fcm-router/fcm
+  task: opencode-go/claude-haiku-5-5:high
+  commit: opencode-go/mimo-v2.6-flash:high
+  tiny: opencode-go/mimo-v2.6-flash:high
+  memory: opencode-go/gpt-6-luna:auto
+  slow: opencode-go/step-5-preview-free:xhigh
+  plan: opencode-go/step-5-preview-free
+  advisor: opencode-go/step-5-preview-free:medium
+  judge: opencode-zen/jev-1.13-free
+  vision: opencode-go/step-5-preview-free:auto
   web: web/exa
+  image: openrouter/google/gemini-3-pro-image-preview
+  default: opencode-go/step-5-preview-free
 symbolPreset: unicode
 theme:
   dark: dark-catppuccin
@@ -18,18 +19,18 @@ setupVersion: 2
 defaultThinkingLevel: auto
 compaction:
   enabled: true
-  thresholdTokens: -1
+  thresholdTokens: 200000
   midTurnEnabled: true
   dropUseless: true
   autoContinue: true
   handoffSaveToDisk: true
   methodOrder:
-    - shake
-    - handoff
     - snapcompact
-    - remote
+    - shake
     - soft
-  thresholdPercent: 70
+    - remote
+    - handoff
+  thresholdPercent: 60
   idleEnabled: true
   idleThresholdTokens: 200000
   experimentalContextManagement: true
@@ -50,20 +51,19 @@ retry:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     task:
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/step-5-preview-free
       - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     commit:
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/claude-haiku-5-5:medium
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     tiny:
-      - opencode-go/deepseek-v4.1-flash
-      - fcm-router/fcm
+      - opencode-go/claude-haiku-5-5
       - opencode-go/longcat-2.5-preview-free
     memory:
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/claude-haiku-5-5
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     slow:
@@ -76,8 +76,8 @@ retry:
       - opencode-go/deepseek-v4.1-flash
       - opencode-go/longcat-2.5-preview-free
     advisor:
-      - opencode-go/gpt-6-luna
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/mimo-v2.6-flash:high
+      - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     default:
       - opencode-go/gpt-6-luna
@@ -88,6 +88,11 @@ retry:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     judge:
+      - openrouter/~typesafe/jev-latest
+      - kilo/typesafe/jev-router
+      - opencode-go/longcat-2.5-preview-free
+    image:
+      - opencode-go/step-5-preview-free
       - opencode-go/gpt-6-luna
       - opencode-go/mimo-v2.6-flash
       - opencode-go/longcat-2.5-preview-free
@@ -116,10 +121,11 @@ display:
   showTurnTime: true
 personality: pragmatic
 advisor:
-  enabled: false
+  enabled: true
   syncBacklog: "1"
   immuneTurns: 0
-  maxNotesPerUpdate: 1
+  maxNotesPerUpdate: 3
+  reviewMode: agent-end
 prewalk:
   enabled: false
 steeringMode: all
@@ -137,7 +143,7 @@ paste:
 tools:
   approvalMode: yolo
   format: auto
-  xdev: true
+  xdev: false
   outputMaxColumns: 768
   abortOnFabricatedResult: true
   approval:
@@ -156,9 +162,10 @@ tools:
     enabled: false
     maxInFlight: 1
   maxTimeout: 600
-  xdevDocs: builtins
+  xdevDocs: inline
   xdevInlineDevices:
     - mcp*
+  artifactSpillThreshold: 50
 error:
   notify: "on"
 recap:
@@ -178,6 +185,7 @@ mnemopi:
   scoping: per-project-tagged
   enhancedRecall: true
   proactiveLinking: true
+  polyphonicRecall: true
 read:
   renderMarkdown: false
   defaultLimit: 500
@@ -197,14 +205,15 @@ composer:
   shape: borderless
 tier:
   advisor: inherit
-  openai: flex
-  subagent: inherit
+  openai: none
+  subagent: none
+  anthropic: none
 modelRoleStorage: global
 dev:
   autoqa: false
 github:
   enabled: true
-inlineToolDescriptors: "on"
+inlineToolDescriptors: "off"
 bashInterceptor:
   enabled: true
 task:
@@ -215,7 +224,7 @@ task:
   maxEffort: max
   isolation:
     commits: generic
-  eager: default
+  eager: preferred
   enableEffort: true
   prewalk: false
   disabledAgents:
@@ -226,8 +235,8 @@ task:
 goal:
   enabled: true
 includeModelInPrompt: true
-skillful: true
-includeWorkspaceTree: true
+skillful: false
+includeWorkspaceTree: false
 edit:
   recoverInlineEdits: true
   mode: hashline
@@ -244,15 +253,17 @@ commands:
 providers:
   webSearchTimeoutSeconds: 300
   tinyModelDtype: default
-  streamFirstEventTimeoutSeconds: -1
-  streamIdleTimeoutSeconds: -1
+  streamFirstEventTimeoutSeconds: 300
+  streamIdleTimeoutSeconds: 600
   maxInFlightRequests:
     {}
-  cacheRetention: none
+  cacheRetention: short
   openaiWebsockets: auto
   kimiApiFormat: auto
   openaiLiveSteering: true
   autoThinkingMaxEffort: xhigh
+  cacheWarming: idle
+  openrouterVariant: default
 provider:
   appendOnlyContext: auto
 secrets:
@@ -260,7 +271,7 @@ secrets:
 ask:
   timeout: 0
 update:
-  channel: canary
+  channel: stable
 async:
   enabled: true
 astGrep:
@@ -270,7 +281,7 @@ find:
 checkpoint:
   enabled: true
 omitThinking: false
-proseOnlyThinking: true
+proseOnlyThinking: false
 model:
   loopGuard:
     enabled: true
@@ -308,6 +319,27 @@ isolation:
   backend: auto
 astEdit:
   enabled: true
-hideThinkingBlock: false
+hideThinkingBlock: true
 hindsight:
   recallBudget: high
+modelPresets:
+  step-5-preview-free-build:
+    modelRoles:
+      smol: opencode-go/mimo-v2.6-flash
+      task: opencode-go/claude-haiku-5-5:high
+      commit: opencode-go/mimo-v2.6-flash:high
+      tiny: opencode-go/mimo-v2.6-flash:high
+      memory: opencode-go/gpt-6-luna:auto
+      slow: opencode-go/step-5-preview-free:xhigh
+      plan: opencode-go/step-5-preview-free
+      advisor: opencode-go/step-5-preview-free:medium
+      judge: opencode-go/deepseek-v4.1-flash
+      vision: opencode-go/step-5-preview-free:auto
+      web: web/exa
+      image: openrouter/google/gemini-3-pro-image-preview
+      default: opencode-go/step-5-preview-free
+    defaultThinkingLevel: auto
+shellMinimizer:
+  sourceOutlineLevel: default
+ratchet:
+  enabled: true
