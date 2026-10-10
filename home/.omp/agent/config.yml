@@ -264,6 +264,8 @@ providers:
   autoThinkingMaxEffort: xhigh
   cacheWarming: idle
   openrouterVariant: default
+  openai-codex:
+    codeMode: "on"
 provider:
   appendOnlyContext: auto
 secrets:
