@@ -143,7 +143,7 @@ paste:
 tools:
   approvalMode: yolo
   format: auto
-  xdev: false
+  xdev: true
   outputMaxColumns: 768
   abortOnFabricatedResult: true
   approval:
