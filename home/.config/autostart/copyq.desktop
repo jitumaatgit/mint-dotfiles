@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=CopyQ
+Comment=Clipboard manager with searchable history. Provides the Super+v hotkey (copyq toggle).
+Exec=copyq
+Icon=copyq
+Terminal=false
+X-GNOME-Autostart-Delay=3
+Categories=Utility;
