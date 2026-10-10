@@ -66,14 +66,14 @@ Rules the format follows:
 Commands: `:TangentCapture` (float), `:TangentCapture!` (float, quit when done —
 this is what a cold start runs), `:TangentAppend <text>` (no UI, for scripts).
 
-## Layout
-
 | What | Where |
 |---|---|
-| Float, write path, RPC entry point | `home/.config/nvim/lua/custom/tangent-capture.lua` |
+| Float, insert rules, write path, RPC entry point | `home/.config/nvim/lua/custom/note-capture.lua` |
+| Tangent's section choice and entry shape | `home/.config/nvim/lua/custom/tangent-capture.lua` |
 | Self-check | `home/.config/nvim/lua/custom/tangent-capture_test.lua` |
 | System-wide trigger | `home/.local/bin/nvim-tangent-capture` |
-| OS hotkey registration | `patches/apply-cinnamon-tangent-keybinding.sh` |
+| Editor resolution shared with the daily note | `home/.local/lib/nvim-editor-socket.sh` |
+| OS hotkey registration | `patches/apply-cinnamon-note-keybindings.sh` |
 | WezTerm binding | `home/.config/wezterm/wezterm.lua` |
 
 ## How the system-wide trigger finds your editor
@@ -130,14 +130,17 @@ tmux %1 pid 6978 (rank 1) -> /run/user/1001/nvim.148565.0 pid 148565
 
 ## Install and verify
 
-`./install.sh` deploys the Lua module and the script (stow). The hotkey is the
-one piece that lives outside the repo, in dconf:
+`./install.sh` deploys the Lua module and the scripts (stow). The three note
+hotkeys live outside the repo, in dconf, and one script manages all of them:
 
 ```sh
-./patches/apply-cinnamon-tangent-keybinding.sh            # register <Super>t
-./patches/apply-cinnamon-tangent-keybinding.sh --check    # already part of ./smoke.sh
-./patches/apply-cinnamon-tangent-keybinding.sh --remove   # unbind
+./patches/apply-cinnamon-note-keybindings.sh            # register <Super>t and friends
+./patches/apply-cinnamon-note-keybindings.sh --check    # already part of ./smoke.sh
+./patches/apply-cinnamon-note-keybindings.sh --remove   # unbind
 ```
+
+`<Super>t` keeps the slot it always had (`custom2`); `<Super>d` and `<Super>a`
+took the next free ones. See `docs/guide/daily-note.md` for the other two.
 
 Then **restart nvim** — the module is loaded at startup.
 

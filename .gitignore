@@ -205,6 +205,13 @@ plan.txt
 # Note home/.config/offpunk/offpunkrc points ftr_site_config at this path.
 home/.config/offpunk/ftr-site-config/
 
+# Exception to the Python "lib/" rule above: home/.local/lib/ is a directory this
+# repo genuinely ships — the editor-resolution library shared by
+# nvim-tangent-capture and nvim-daily-note. Both lines are needed: git cannot
+# re-include a file whose parent directory is still excluded.
+!home/.local/lib/
+!home/.local/lib/*
+
 # ntfy client.yml holds the subscribed topic names, which are the only thing
 # protecting the alerts on a public server. Credentials, not dotfiles.
 home/.config/ntfy/client.yml
