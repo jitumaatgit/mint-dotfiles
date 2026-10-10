@@ -4,8 +4,14 @@ set -euo pipefail
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-# Deploy stow
-stow -t "$HOME" -d "$REPO_ROOT" home
+# Deploy stow. --no-folding is not optional and not a style choice: without it,
+# on a fresh clone stow folds ~/.config and ~/.omp into directory symlinks
+# pointing at the repo, so every app write and all runtime state lands inside
+# the repo and deleting it dangles $HOME. Verified in a throwaway $HOME: 9 links
+# with .config folded versus 2177 per-file links. smoke.sh is the first thing
+# run on a fresh clone, which makes it the worst place to get this wrong.
+# install.sh has always passed it; ADR-0004.
+stow --no-folding -t "$HOME" -d "$REPO_ROOT" home
 
 # Verify that a key symlink exists
 if [ ! -L "$HOME/.bashrc" ]; then
