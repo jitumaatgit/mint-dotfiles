@@ -1,17 +1,18 @@
 modelRoles:
-  smol: opencode-go/mimo-v2.6-flash
+  smol: opencode-go/mimo-v2.6-flash:auto
   task: opencode-go/mimo-v2.6-flash:high
   commit: opencode-go/mimo-v2.6-flash:high
   tiny: opencode-go/mimo-v2.6-flash:high
   memory: opencode-go/gpt-6-luna:auto
-  slow: opencode-go/step-5-preview-free:xhigh
-  plan: opencode-go/step-5-preview-free
-  advisor: opencode-go/step-5-preview-free:medium
+  slow: opencode-go/gpt-6-luna:max
+  plan: opencode-go/step-5-preview-free:xhigh
+  advisor: opencode-go/step-5-preview-free:high
   judge: opencode-zen/jev-1.13-free
-  vision: opencode-go/step-5-preview-free:auto
   web: web/exa
-  image: openrouter/google/gemini-3-pro-image-preview
-  default: opencode-go/step-5-preview-free
+  default: opencode-go/step-5-preview-free:xhigh
+  FREE: opencode-go/step-5-preview-free:xhigh
+  vision: opencode-go/deepseek-v4-flash-vision-exp:auto
+  image: google/gemini-2.5-flash-image
 symbolPreset: unicode
 theme:
   dark: dark-catppuccin
@@ -47,55 +48,47 @@ retry:
       - web/duckduckgo
       - web/public
     smol:
-      - opencode-go/deepseek-v4.1-flash
-      - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
+      - fcm-router/fcm
     task:
       - opencode-go/step-5-preview-free
       - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     commit:
-      - opencode-go/mimo-v2.6-flash:medium
+      - opencode-go/deepseek-v4.1-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     tiny:
-      - opencode-go/mimo-v2.6-flash
       - opencode-go/longcat-2.5-preview-free
     memory:
       - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     slow:
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/step-5-preview-free
       - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     plan:
-      - opencode-go/gpt-6-luna
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/deepseek-v4.1-flash:max
       - opencode-go/longcat-2.5-preview-free
     advisor:
       - opencode-go/mimo-v2.6-flash:high
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     default:
-      - opencode-go/gpt-6-luna
       - opencode-go/deepseek-v4.1-flash
       - opencode-go/longcat-2.5-preview-free
     vision:
-      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
-    judge:
-      - openrouter/~typesafe/jev-latest
-      - kilo/typesafe/jev-router
+    judge: []
+    image: []
+    FREE:
       - opencode-go/longcat-2.5-preview-free
-    image:
-      - opencode-go/step-5-preview-free
-      - opencode-go/gpt-6-luna
-      - opencode-go/mimo-v2.6-flash
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/omen-alpha
+      - opencode-go/deepseek-flash
   usageAwareFallback: false
   usageReservePct: 25
   usageReservePolicy: confirm
@@ -227,8 +220,7 @@ task:
   eager: preferred
   enableEffort: true
   prewalk: false
-  disabledAgents:
-    []
+  disabledAgents: []
   softRequestBudget: 200
   enableLsp: false
   showResolvedModelBadge: true
@@ -255,8 +247,7 @@ providers:
   tinyModelDtype: default
   streamFirstEventTimeoutSeconds: 300
   streamIdleTimeoutSeconds: 600
-  maxInFlightRequests:
-    {}
+  maxInFlightRequests: {}
   cacheRetention: short
   openaiWebsockets: auto
   kimiApiFormat: auto
@@ -312,9 +303,11 @@ computer:
 tasks:
   todoClearDelay: 60
 cycleOrder:
+  - FREE
   - smol
   - slow
   - default
+  - plan
 power:
   sleepPrevention: system
 isolation:
@@ -335,7 +328,7 @@ modelPresets:
       slow: opencode-go/step-5-preview-free:xhigh
       plan: opencode-go/step-5-preview-free
       advisor: opencode-go/step-5-preview-free:medium
-      judge: opencode-go/deepseek-v4.1-flash
+      judge: opencode-zen/jev-1.13-free
       vision: opencode-go/step-5-preview-free:auto
       web: web/exa
       image: openrouter/google/gemini-3-pro-image-preview
@@ -349,3 +342,9 @@ mcp:
   notifications: true
   enableProjectConfig: false
   renderMarkdownResults: true
+images:
+  urls:
+    enabled: false
+  questionTimeoutMs: 300000
+generate_image:
+  enabled: true

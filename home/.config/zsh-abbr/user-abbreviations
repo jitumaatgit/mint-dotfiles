@@ -1,0 +1,1 @@
+abbr -g dn='/home/mint/notes/docs/30-dailynotes/$(date +%Y/%m/%Y-%m-%d).md'

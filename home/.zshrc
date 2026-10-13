@@ -14,6 +14,7 @@ plugins=(
   sudo
   extract
   vi-mode
+  zsh-abbr
 )
 # Removed but i want to add back zsh-autopair, and idk if vim-mode or vi-mode is better
 #  # zsh-autopair
@@ -120,6 +121,16 @@ zstyle ':completion:*' menu select
 zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
 
 source /usr/share/zsh-autosuggestions/zsh-autosuggestions.zsh
+
+# zsh-abbr definitions are tracked at home/.config/zsh-abbr/user-abbreviations
+# and deployed to ~/.config/zsh-abbr/user-abbreviations by Stow.
+# This plugin is installed in Oh My Zsh's custom directory, but is sourced here
+# so it loads after the system zsh-autosuggestions copy above.
+source "$ZSH_CUSTOM/plugins/zsh-autosuggestions-abbreviations-strategy/zsh-autosuggestions-abbreviations-strategy.plugin.zsh"
+# The strategy only suggests abbreviations in command position; `dn` still
+# expands after another command when Space is pressed because it is global.
+ZSH_AUTOSUGGEST_STRATEGY=( abbreviations history )
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=8'
 
 # `command grep` bypasses any grep alias (including the one oh-my-zsh caches),
 # so this cannot pick up a stray --color=always the way the old version did.
@@ -553,6 +564,30 @@ for _c in caps CAPS Caps cAPs CaPs caPS capS CapS capstog CAPSTOG CapsTog; do
 	alias $_c='capstog'
 done
 unset _c
+
+# --- Tern shell integration (OSC 133 prompt reporting) ---------------------
+# Opt-in per the 2026-10-12 Tern handoff decisions. Tern's own shim
+# (~/.tern/shell/zsh/.zshenv, injected via ZDOTDIR for the panes it spawns)
+# already reports prompts inside Tern, so this only covers shells started
+# *outside* Tern. TERN_SESSION is set in Tern panes; the guard keeps the two
+# paths from emitting OSC 133 twice.
+#
+# What it does: printf an escape sequence at prompt start (A), command start
+# (C) and, when a command actually ran, its exit status (D). Nothing else --
+# no plugin, no prompt change, no PROMPT_COMMAND rewrite.
+if [[ -z "$TERN_SESSION" ]] && [[ -o interactive ]]; then
+  autoload -Uz add-zsh-hook
+  typeset -g __tern_user_ran=
+  __tern_user_precmd() {
+    local ec=$?
+    [[ -n "$__tern_user_ran" ]] && printf '\e]133;D;%s\a' "$ec"
+    __tern_user_ran=
+    printf '\e]133;A\a'
+  }
+  __tern_user_preexec() { __tern_user_ran=1; printf '\e]133;C\a'; }
+  add-zsh-hook precmd __tern_user_precmd
+  add-zsh-hook preexec __tern_user_preexec
+fi
 
 # zsh-syntax-highlighting MUST be sourced last. It walks the widget list once
 # at source time and wraps each widget; anything that registers a ZLE widget

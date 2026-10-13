@@ -122,3 +122,26 @@ export PATH=/home/mint/.opencode/bin:$PATH
 # Default browser for CLI tools
 export BROWSER="zen-browser"
 
+
+# --- Tern shell integration (OSC 133 prompt reporting) ----------------------
+# Opt-in per the 2026-10-12 Tern handoff decisions. Bash counterpart of the
+# block in ~/.zshrc. Tern's own shim (~/.tern/shell/bash/rc, injected via
+# BASH_ENV into the panes it spawns) does this inside Tern; this only covers
+# bash sessions started outside it, hence the TERN_SESSION guard.
+#
+# Emits A (prompt started) and D (exit status of the command that actually
+# ran) only, matching Tern's shim: bash has no reliable preexec hook - a DEBUG
+# trap fires for every command, including inside PROMPT_COMMAND - so C (command
+# started) is deliberately not emitted here. Nothing is drawn on screen.
+if [ -z "$TERN_SESSION" ] && [ -n "$PS1" ]; then
+  __tern_user_prompt() {
+    local ec=$? n
+    n=$(builtin history 1); n=${n%%[!0-9 ]*}; n=${n// /}
+    if [ -n "$__tern_user_hist" ] && [ "$n" != "$__tern_user_hist" ]; then printf '\e]133;D;%s\a' "$ec"; fi
+    __tern_user_hist=${n:-0}
+    printf '\e]133;A\a'
+    return $ec
+  }
+  PROMPT_COMMAND="__tern_user_prompt${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+fi
+
