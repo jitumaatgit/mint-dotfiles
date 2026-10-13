@@ -15,7 +15,7 @@ Verbatim messages, what caused them, and what to do instead.
 | `edit` | Multi-file payload: only the first file's op applied | Not the cause — a cross-file regression, see below |
 | `edit` | `CUT` followed by body rows: *"CUT ... takes no body rows"* | My payload — misrouted rows between files |
 | `edit` | *"Auto-prefixed bare body row(s) with `+`"* then body applied at the wrong line | My payload — two `PUT >N` in one call, stale line numbers |
-| `task` | *"Service mode does not accept async or timeout"* | My call — wrong combination, documented in the schema |
+| `task` | *"Service mode does not accept async or timeout"* | Upstream's intended contract; the schema never says the fields are exclusive. Repaired by the [local hook](#service-mode-rejects-timeoutasync-beside-a-service-name) |
 | `bash` | Session `.jsonl` not found after `cd` | My call — file is one level up |
 | `bash` | `ipairs` on `nvim_exec2("messages").output` | My call — `.output` is a string, not a list |
 | `bash` | `JSONDecodeError` on pretty-printed multi-record log | My stub's fault — record separator, not JSON lines |
@@ -224,17 +224,35 @@ edit; after an auto-repair warning, re-read the file.
 
 ## `task`
 
-### `async` is rejected for service mode
+### Service mode rejects `timeout`/`async` beside a service name
 
 ```
 Service mode does not accept async or timeout; use ready.timeout for readiness.
 ```
 
-A long-running background server was requested with `async: true` plus a
-`ready` block.
+A call that names a service also carries a finite-command knob. Upstream throws
+when `async === true` **or** when `timeout` is merely present — `timeout: 0`
+included — before anything runs. The schema declares `name`, `ready`, `timeout`
+and `async` as independent optionals with no exclusivity hint, so a provider lane
+that materializes every optional field hits this on every service call and loses
+a turn. Upstream [issue #13870](https://github.com/can1357/oh-my-pi/issues/13870)
+is open and labelled `wontfix`.
 
-**Workaround:** drop `async` and use `ready: { port: 8899, timeout: 10 }`, which
-is what service mode is for. (`async: true` is fine for a finite job.)
+Two follow-on traps sit behind it: a materialized `ready.port` outside 1..65535
+(`port: 0` survives normalization, then fails in `startService`), and a `ready`
+block with neither a log nor a port (`ready requires log or port`).
+
+**Fixed locally** by the pre-tool hook `~/.omp/agent/hooks/pre/bash.ts` (owned by
+home-git). For a non-blank `name` it deletes top-level `timeout` and
+`async: true`, keeps `async: false` and `ready.timeout`, and drops an unusable
+port — or the whole `ready` block when no readiness signal is left. It only ever
+deletes fields, so the revision still validates against the bash schema, and it
+fails open rather than blocking a call if it ever throws. Self-check:
+`bun test tests/bash-service-hook.test.ts`, run by `./smoke.sh`.
+
+**Workaround without the hook:** drop `async` and `timeout`, and use
+`ready: { port: 8899, timeout: 10 }`, which is what service mode is for.
+(`async: true` is right for a finite job.)
 
 ## `bash`
 

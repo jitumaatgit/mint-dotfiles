@@ -227,4 +227,21 @@ else
   echo "⏭  Chicago95 not installed; skipping Cinnamon override checks"
 fi
 
+# The OMP bash service-call normalizer is owned by home-git (mint-dotfiles tracks
+# only .omp/agent/config.yml and models.yml under home/.omp/agent), so it is read
+# from $HOME and skipped when it is not deployed yet — the same conditional shape
+# as the copyq and Chicago95 checks above. Without it a named `bash` service call
+# that also carries timeout or async dies on upstream validation before anything
+# runs: https://github.com/can1357/oh-my-pi/issues/13870
+if command -v bun >/dev/null && [ -f "$HOME/.omp/agent/hooks/pre/bash.ts" ]; then
+  echo "🧪 Running OMP bash service-hook self-check"
+  if ! hook_check=$(bun test "$REPO_ROOT/tests/bash-service-hook.test.ts" 2>&1); then
+    printf '%s\n' "$hook_check"
+    echo "🚫 OMP bash service-hook self-check failed"
+    exit 1
+  fi
+else
+  echo "⏭  OMP bash service hook not deployed (or bun missing); skipping"
+fi
+
 echo "✅ Smoke test passed"
