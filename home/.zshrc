@@ -565,30 +565,6 @@ for _c in caps CAPS Caps cAPs CaPs caPS capS CapS capstog CAPSTOG CapsTog; do
 done
 unset _c
 
-# --- Tern shell integration (OSC 133 prompt reporting) ---------------------
-# Opt-in per the 2026-10-12 Tern handoff decisions. Tern's own shim
-# (~/.tern/shell/zsh/.zshenv, injected via ZDOTDIR for the panes it spawns)
-# already reports prompts inside Tern, so this only covers shells started
-# *outside* Tern. TERN_SESSION is set in Tern panes; the guard keeps the two
-# paths from emitting OSC 133 twice.
-#
-# What it does: printf an escape sequence at prompt start (A), command start
-# (C) and, when a command actually ran, its exit status (D). Nothing else --
-# no plugin, no prompt change, no PROMPT_COMMAND rewrite.
-if [[ -z "$TERN_SESSION" ]] && [[ -o interactive ]]; then
-  autoload -Uz add-zsh-hook
-  typeset -g __tern_user_ran=
-  __tern_user_precmd() {
-    local ec=$?
-    [[ -n "$__tern_user_ran" ]] && printf '\e]133;D;%s\a' "$ec"
-    __tern_user_ran=
-    printf '\e]133;A\a'
-  }
-  __tern_user_preexec() { __tern_user_ran=1; printf '\e]133;C\a'; }
-  add-zsh-hook precmd __tern_user_precmd
-  add-zsh-hook preexec __tern_user_preexec
-fi
-
 # zsh-syntax-highlighting MUST be sourced last. It walks the widget list once
 # at source time and wraps each widget; anything that registers a ZLE widget
 # afterwards (fzf's Ctrl-R/Ctrl-T widgets, pay-respects' ^X^X) is never
