@@ -1,18 +1,17 @@
 modelRoles:
-  smol: opencode-go/mimo-v2.6-flash:auto
-  task: opencode-go/mimo-v2.6-flash:high
-  commit: opencode-go/mimo-v2.6-flash:high
-  tiny: opencode-go/mimo-v2.6-flash:high
-  memory: opencode-go/gpt-6-luna:auto
-  slow: opencode-go/gpt-6-luna:max
-  plan: opencode-go/step-5-preview-free:xhigh
-  advisor: opencode-go/step-5-preview-free:high
+  plan: opencode-go/deepseek-v4.1-flash:auto
+  advisor: opencode-go/deepseek-v4.1-flash:auto
   judge: opencode-zen/jev-1.13-free
   web: web/exa
-  default: opencode-go/step-5-preview-free:xhigh
-  FREE: opencode-go/step-5-preview-free:xhigh
+  FREE: opencode-go/cat-jam-free:auto
   vision: opencode-go/deepseek-v4-flash-vision-exp:auto
-  image: google/gemini-2.5-flash-image
+  commit: opencode-go/deepseek-v4.1-flash:auto
+  tiny: opencode-go/deepseek-v4.1-flash:auto
+  memory: opencode-go/deepseek-v4.1-flash:auto
+  task: opencode-go/deepseek-v4.1-flash:auto
+  default: opencode-go/deepseek-v4.1-flash
+  smol: opencode-go/deepseek-v4.1-flash:low
+  slow: opencode-go/deepseek-v4.1-flash:max
 symbolPreset: unicode
 theme:
   dark: dark-catppuccin
@@ -25,20 +24,15 @@ compaction:
   dropUseless: true
   autoContinue: true
   handoffSaveToDisk: true
-  methodOrder:
-    - snapcompact
-    - shake
-    - soft
-    - remote
-    - handoff
-  thresholdPercent: 60
+  thresholdPercent: -1
   idleEnabled: true
-  idleThresholdTokens: 200000
+  idleThresholdTokens: 100000
   experimentalContextManagement: true
   idleTimeoutSeconds: 1800
+  asyncEnabled: true
 retry:
   enabled: true
-  maxRetries: 2
+  maxRetries: 3
   modelFallback: true
   fallbackChains:
     web:
@@ -48,37 +42,30 @@ retry:
       - web/duckduckgo
       - web/public
     smol:
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/cat-jam-free:minimal
       - fcm-router/fcm
     task:
       - opencode-go/step-5-preview-free
-      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     commit:
-      - opencode-go/deepseek-v4.1-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     tiny:
       - opencode-go/longcat-2.5-preview-free
     memory:
-      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     slow:
       - opencode-go/step-5-preview-free
-      - opencode-go/mimo-v2.6-flash
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
-    plan:
-      - opencode-go/deepseek-v4.1-flash:max
-      - opencode-go/longcat-2.5-preview-free
     advisor:
-      - opencode-go/mimo-v2.6-flash:high
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     default:
-      - opencode-go/deepseek-v4.1-flash
+      - opencode-go/cat-jam-free:high
+      - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     vision:
       - fcm-router/fcm
@@ -86,9 +73,11 @@ retry:
     judge: []
     image: []
     FREE:
+      - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
-      - opencode-go/omen-alpha
-      - opencode-go/deepseek-flash
+    plan:
+      - opencode-go/cat-jam-free:xhigh
+      - opencode-go/longcat-2.5-preview-free
   usageAwareFallback: false
   usageReservePct: 25
   usageReservePolicy: confirm
@@ -102,22 +91,24 @@ statusLine:
 terminal:
   showProgress: true
 tui:
-  tight: false
+  tight: true
   scrollbackRebuild: true
   vimMode: true
   vimModeDisplay: text
   reactions: false
+  mouse: false
 display:
   shimmer: classic
   showTokenUsage: true
   cacheMissMarker: true
   showTurnTime: true
+  subagentLivePreview: true
 personality: pragmatic
 advisor:
   enabled: true
   syncBacklog: "1"
   immuneTurns: 0
-  maxNotesPerUpdate: 3
+  maxNotesPerUpdate: 4
   reviewMode: agent-end
 prewalk:
   enabled: false
@@ -196,8 +187,9 @@ todo:
   reminders: true
 composer:
   shape: borderless
+  tokenRate: true
 tier:
-  advisor: inherit
+  advisor: none
   openai: none
   subagent: none
   anthropic: none
@@ -206,7 +198,6 @@ dev:
   autoqa: false
 github:
   enabled: true
-inlineToolDescriptors: "off"
 bashInterceptor:
   enabled: true
 task:
@@ -227,7 +218,7 @@ task:
 goal:
   enabled: true
 includeModelInPrompt: true
-skillful: false
+skillful: true
 includeWorkspaceTree: false
 edit:
   recoverInlineEdits: true
@@ -285,7 +276,8 @@ model:
 textVerbosity: medium
 externalThinking: false
 snapcompact:
-  toolResults: false
+  toolResults: true
+  systemPrompt: all
 ttsr:
   builtinRules: true
   judge: "on"
@@ -334,6 +326,22 @@ modelPresets:
       image: openrouter/google/gemini-3-pro-image-preview
       default: opencode-go/step-5-preview-free
     defaultThinkingLevel: auto
+  opcgoflashcache:
+    modelRoles:
+      plan: opencode-go/deepseek-v4.1-flash:auto
+      advisor: opencode-go/deepseek-v4.1-flash:auto
+      judge: opencode-zen/jev-1.13-free
+      web: web/exa
+      FREE: opencode-go/cat-jam-free:auto
+      vision: opencode-go/deepseek-v4-flash-vision-exp:auto
+      commit: opencode-go/deepseek-v4.1-flash:auto
+      tiny: opencode-go/deepseek-v4.1-flash:auto
+      memory: opencode-go/deepseek-v4.1-flash:auto
+      task: opencode-go/deepseek-v4.1-flash:auto
+      default: opencode-go/deepseek-v4.1-flash
+      smol: opencode-go/deepseek-v4.1-flash:low
+      slow: opencode-go/deepseek-v4.1-flash:max
+    defaultThinkingLevel: auto
 shellMinimizer:
   sourceOutlineLevel: default
 ratchet:
@@ -346,5 +354,8 @@ images:
   urls:
     enabled: false
   questionTimeoutMs: 300000
+  blockImages: false
 generate_image:
   enabled: true
+input:
+  bareSlashCommands: true

@@ -428,8 +428,10 @@ config.keys = {
 	-- Tabs
 	{ key = "c", mods = "LEADER", action = act.SpawnTab("CurrentPaneDomain") },
 	{ key = "&", mods = "LEADER", action = act.CloseCurrentTab({ confirm = true }) },
-	{ key = "Tab", mods = "CTRL", action = act.ActivateTabRelative(1) },
-	{ key = "Tab", mods = "CTRL|SHIFT", action = act.ActivateTabRelative(-1) },
+	{ key = "Tab", mods = "CTRL", action = act.DisableDefaultAssignment },
+	{ key = "Tab", mods = "CTRL|SHIFT", action = act.DisableDefaultAssignment },
+	{ key = "Tab", mods = "LEADER", action = act.ActivateTabRelative(1) },
+	{ key = "Tab", mods = "LEADER|SHIFT", action = act.ActivateTabRelative(-1) },
 	-- Panes
 	{
 		key = "!",
