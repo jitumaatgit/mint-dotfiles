@@ -38,3 +38,32 @@ require("custom.notes-made-today").setup()
 -- Capture a tangent into today's `## Tangent Parking Lot` without leaving the
 -- note you are in (`<leader>nT`, or the system-wide nvim-tangent-capture).
 require("custom.tangent-capture").setup()
+
+-- Firenvim-only minimal UI (textarea takeover)
+if vim.g.started_by_firenvim then
+  vim.o.laststatus = 0
+  vim.o.showtabline = 0
+  vim.o.lines = 10
+  vim.o.columns = 80
+end
+
+vim.g.firenvim_config = {
+  globalSettings = { alt = "all" },
+  localSettings = {
+    [".*"] = {
+      cmdline = "neovim",
+      content = "text",
+      priority = 0,
+      selector = "textarea",
+      takeover = "once",
+    },
+  },
+}
+
+-- Clipboard provider: CopyQ
+vim.g.clipboard = {
+  name = "copyq",
+  copy = { ["+"] = "copyq copy -", ["*"] = "copyq copy -" },
+  paste = { ["+"] = "copyq clipboard", ["*"] = "copyq clipboard" },
+  cache_enabled = 0,
+}

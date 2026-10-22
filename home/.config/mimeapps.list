@@ -1,0 +1,17 @@
+[Default Applications]
+x-scheme-handler/http=app.zen_browser.zen.desktop
+x-scheme-handler/https=app.zen_browser.zen.desktop
+text/html=app.zen_browser.zen.desktop
+application/xhtml+xml=app.zen_browser.zen.desktop
+application/xml=app.zen_browser.zen.desktop
+x-scheme-handler/about=app.zen_browser.zen.desktop
+x-scheme-handler/unknown=app.zen_browser.zen.desktop
+x-scheme-handler/mailto=app.zen_browser.zen.desktop
+x-scheme-handler/tern=so.stencil.tern.url.desktop
+text/plain=neovide.desktop
+
+[Added Associations]
+x-scheme-handler/http=app.zen_browser.zen.desktop;
+x-scheme-handler/https=app.zen_browser.zen.desktop;
+text/html=app.zen_browser.zen.desktop;
+application/xhtml+xml=app.zen_browser.zen.desktop;

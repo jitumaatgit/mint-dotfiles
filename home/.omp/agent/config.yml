@@ -1,17 +1,17 @@
 modelRoles:
-  plan: opencode-go/deepseek-v4.1-flash:auto
-  advisor: opencode-go/deepseek-v4.1-flash:auto
+  plan: opencode-go/beam-free:high
+  advisor: opencode-go/cat-jam-free:high
   judge: opencode-zen/jev-1.13-free
   web: web/exa
-  FREE: opencode-go/cat-jam-free:auto
   vision: opencode-go/deepseek-v4-flash-vision-exp:auto
-  commit: opencode-go/deepseek-v4.1-flash:auto
-  tiny: opencode-go/deepseek-v4.1-flash:auto
-  memory: opencode-go/deepseek-v4.1-flash:auto
-  task: opencode-go/deepseek-v4.1-flash:auto
-  default: opencode-go/deepseek-v4.1-flash
-  smol: opencode-go/deepseek-v4.1-flash:low
-  slow: opencode-go/deepseek-v4.1-flash:max
+  commit: opencode-go/beam-free:medium
+  tiny: opencode-go/beam-free:medium
+  memory: opencode-go/beam-free:high
+  task: opencode-zen/beam-free:high
+  default: opencode-go/beam-free
+  slow: opencode-go/beam-free:high
+  smol: opencode-go/beam-free:low
+  FREE: opencode-go/cat-jam-free:auto
 symbolPreset: unicode
 theme:
   dark: dark-catppuccin
@@ -29,7 +29,12 @@ compaction:
   idleThresholdTokens: 100000
   experimentalContextManagement: true
   idleTimeoutSeconds: 1800
-  asyncEnabled: true
+  asyncEnabled: false
+  methodOrder:
+    - remote
+    - handoff
+    - shake
+    - soft
 retry:
   enabled: true
   maxRetries: 3
@@ -42,10 +47,8 @@ retry:
       - web/duckduckgo
       - web/public
     smol:
-      - opencode-go/cat-jam-free:minimal
-      - fcm-router/fcm
+      - opencode-go/beam-free:high
     task:
-      - opencode-go/step-5-preview-free
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     commit:
@@ -57,15 +60,13 @@ retry:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     slow:
-      - opencode-go/step-5-preview-free
-      - fcm-router/fcm
+      - opencode-go/cat-jam-free:high
       - opencode-go/longcat-2.5-preview-free
     advisor:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     default:
-      - opencode-go/cat-jam-free:high
-      - fcm-router/fcm
+      - opencode-go/deepseek-v4.1-flash:low
       - opencode-go/longcat-2.5-preview-free
     vision:
       - fcm-router/fcm
@@ -76,8 +77,7 @@ retry:
       - fcm-router/fcm
       - opencode-go/longcat-2.5-preview-free
     plan:
-      - opencode-go/cat-jam-free:xhigh
-      - opencode-go/longcat-2.5-preview-free
+      - opencode-go/beam-free
   usageAwareFallback: false
   usageReservePct: 25
   usageReservePolicy: confirm
@@ -103,7 +103,7 @@ display:
   cacheMissMarker: true
   showTurnTime: true
   subagentLivePreview: true
-personality: pragmatic
+personality: none
 advisor:
   enabled: true
   syncBacklog: "1"
@@ -165,6 +165,7 @@ memory:
   backend: mnemopi
 autolearn:
   enabled: true
+  autoContinue: true
 mnemopi:
   scoping: per-project-tagged
   enhancedRecall: true
@@ -198,8 +199,6 @@ dev:
   autoqa: false
 github:
   enabled: true
-bashInterceptor:
-  enabled: true
 task:
   batch: true
   maxConcurrency: 32
@@ -217,7 +216,7 @@ task:
   showResolvedModelBadge: true
 goal:
   enabled: true
-includeModelInPrompt: true
+includeModelInPrompt: false
 skillful: true
 includeWorkspaceTree: false
 edit:
@@ -239,7 +238,7 @@ providers:
   streamFirstEventTimeoutSeconds: 300
   streamIdleTimeoutSeconds: 600
   maxInFlightRequests: {}
-  cacheRetention: short
+  cacheRetention: auto
   openaiWebsockets: auto
   kimiApiFormat: auto
   openaiLiveSteering: true
@@ -276,13 +275,14 @@ model:
 textVerbosity: medium
 externalThinking: false
 snapcompact:
-  toolResults: true
-  systemPrompt: all
+  toolResults: false
+  systemPrompt: minimal
 ttsr:
   builtinRules: true
   judge: "on"
   interruptMode: always
   enabled: true
+  repeatGap: 10
 grep:
   enabled: true
   contextAfter: 10
@@ -306,7 +306,7 @@ isolation:
   backend: auto
 astEdit:
   enabled: true
-hideThinkingBlock: false
+hideThinkingBlock: true
 hindsight:
   recallBudget: high
 modelPresets:
@@ -359,3 +359,7 @@ generate_image:
   enabled: true
 input:
   bareSlashCommands: true
+speech:
+  enhanced: false
+browser:
+  headless: true

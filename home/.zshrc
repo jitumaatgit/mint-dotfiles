@@ -289,7 +289,7 @@ ompp() {
 }
 
 export EDITOR="nvim"
-export VISUAL="nvim"
+export VISUAL="neovide"
 export OPENCODE_DISABLE_AUTOUPDATE=true
 export PLANNOTATOR_DATA_DIR="$HOME/notes/docs/plannotator"
 # Man page styling. Three things had to change to get colour working:
@@ -572,3 +572,28 @@ unset _c
 # constraint because it re-binds on every precmd.
 source /usr/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+
+# capture: dump a Tern pane scrollback to a temp file and open in nvim
+capture() {
+  local block="${1:-@focused}"
+  if ! command -v tern >/dev/null 2>&1; then
+    print -u2 "capture: tern not found in PATH"
+    return 1
+  fi
+  if ! command -v nvim >/dev/null 2>&1; then
+    print -u2 "capture: nvim not found in PATH"
+    return 1
+  fi
+  local tmp
+  tmp=$(mktemp -t "tern-capture-XXXXXX") || return 1
+  if ! tern capture "$block" --scrollback >"$tmp" 2>/dev/null; then
+    print -u2 "capture: tern capture failed"
+    rm -f -- "$tmp"
+    return 1
+  fi
+  # clean up temp file even if nvim is interrupted
+  trap 'rm -f -- "$tmp"' EXIT INT TERM
+  nvim "$tmp"
+  rm -f -- "$tmp"
+  trap - EXIT INT TERM
+}
