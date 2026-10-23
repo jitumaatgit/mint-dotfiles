@@ -532,7 +532,7 @@ local function generate_weekly_note_content(iso_data, week_dates, mode)
   table.insert(lines, "")
 
   for _, d in ipairs(week_dates) do
-    local link_path = string.format("30-dailynotes/%04d/%02d/%s", d.date.year, d.date.month, d.date_str)
+    local link_path = string.format("docs/30-dailynotes/%04d/%02d/%s", d.date.year, d.date.month, d.date_str)
     local link_text = string.format("- [[%s|%s %s]]", link_path, d.day_name, d.date_str)
     table.insert(lines, link_text)
   end
