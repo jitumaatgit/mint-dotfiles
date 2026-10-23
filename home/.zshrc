@@ -597,3 +597,12 @@ capture() {
   rm -f -- "$tmp"
   trap - EXIT INT TERM
 }
+
+# Tern debug verbosity
+export STENCIL_LOG=debug
+export GDK_SYNCHRONIZE=1
+export STENCIL_LOG_DIR="$HOME/.local/state/tern/logs"
+
+# Default editor for CLI tools
+export EDITOR="nvim"
+export VISUAL="neovide"

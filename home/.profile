@@ -26,3 +26,7 @@ export BROWSER="zen-browser"
 conky -c ~/.config/conky/mocha.conf &
 # weston wayland
 export FREE_CODING_MODELS_TELEMETRY=1 # for local telemetry (i thin)
+
+# Default editor for CLI tools
+export EDITOR="nvim"
+export VISUAL="neovide"

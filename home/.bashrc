@@ -91,6 +91,7 @@ fi
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+alias locate='plocate'
 
 # Add an "alert" alias for long running commands.  Use like so:
 #   sleep 10; alert
@@ -123,3 +124,6 @@ export PATH=/home/mint/.opencode/bin:$PATH
 export BROWSER="zen-browser"
 
 
+# Default editor for CLI tools
+export EDITOR="nvim"
+export VISUAL="neovide"
