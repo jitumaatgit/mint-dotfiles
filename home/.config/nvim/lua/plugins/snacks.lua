@@ -314,7 +314,7 @@ return {
         },
       },
       notifier = {
-        enabled = true,
+        enabled = false,
         top_down = true,
       },
     },

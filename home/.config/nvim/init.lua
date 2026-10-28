@@ -67,3 +67,10 @@ vim.g.clipboard = {
   paste = { ["+"] = "copyq clipboard", ["*"] = "copyq clipboard" },
   cache_enabled = 0,
 }
+
+-- Disable remote providers that are not installed (silences :checkhealth vim.provider warnings).
+-- Re-enable by removing the relevant line if you install the host module.
+vim.g.loaded_node_provider = 0
+vim.g.loaded_perl_provider = 0
+vim.g.loaded_python3_provider = 0
+vim.g.loaded_ruby_provider = 0

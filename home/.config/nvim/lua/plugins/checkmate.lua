@@ -148,6 +148,22 @@ return {
   config = function(_, opts)
     require("checkmate").setup(opts)
 
+    -- Race condition fix: checkmate's TextChanged/TextChangedI autocmds call
+    -- process_buffer on every keystroke, which races with render-markdown's
+    -- redraw and can hang nvim while typing a partial todo marker like "- [  ]".
+    -- Disable per-keystroke processing; full processing still runs on InsertLeave
+    -- and on save (BufWriteCmd), so todos are still converted/styled.
+    vim.api.nvim_create_autocmd({ "FileType", "BufEnter" }, {
+      pattern = "markdown",
+      callback = function(args)
+        vim.schedule(function()
+          if not vim.api.nvim_buf_is_valid(args.buf) then return end
+          vim.api.nvim_clear_autocmds({ group = "checkmate_buffer", buffer = args.buf, event = "TextChanged" })
+          vim.api.nvim_clear_autocmds({ group = "checkmate_buffer", buffer = args.buf, event = "TextChangedI" })
+        end)
+      end,
+      desc = "checkmate: disable per-keystroke processing (freeze fix)",
+    })
     -- Custom keymaps with <leader>t prefix
     local map = vim.keymap.set
     local api = require("checkmate.api")

@@ -26,9 +26,6 @@ set clipboard=unnamedplus
 
 " --- keymaps ---
 " Insert-mode escape
-inoremap jj <Esc>
-inoremap kk <Esc>
-inoremap jk <Esc>
 inoremap kj <Esc>
 
 " terminal mode not available in fakevim; skip

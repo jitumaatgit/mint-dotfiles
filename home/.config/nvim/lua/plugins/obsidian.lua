@@ -98,19 +98,29 @@ return {
     end,
   },
   keys = {
-    { "<leader>nc", "<cmd>ObsidianRename<cr>", desc = "Rename note" },
-    { "<leader>nn", "<cmd>ObsidianNew<cr>", desc = "New note" },
-    { "<leader>nd", "<cmd>ObsidianDailies<cr>", desc = "Open picker of this weeks daily notes" },
-    { "<leader>nt", "<cmd>ObsidianToday<cr>", desc = "Open today's daily note" },
-    { "<leader>ny", "<cmd>ObsidianToday -1<cr>", desc = "Open yesterday's note" },
-    { "<leader>nu", "<cmd>ObsidianToday 1<cr>", desc = "Open tomorrow's note" },
-    { "<leader>nw", "<cmd>ObsidianWeeklyPrev<cr>", desc = "Open weekly note" },
-    { "<leader>ns", "<cmd>ObsidianSearch<cr>", desc = "Search notes" },
-    { "<leader>nb", "<cmd>ObsidianBacklinks<cr>", desc = "Show backlinks" },
-    { "<leader>no", "<cmd>ObsidianLinks<cr>", desc = "Show outgoing links" },
-    { "<leader>nl", "<cmd>ObsidianLink<cr>", desc = "link text to existing note", mode = "v" },
-    { "<leader>ni", "<cmd>ObsidianPasteImg<cr>", desc = "Paste image" },
-    { "<leader>ne", "<cmd>ObsidianExtractNote<cr>", desc = "Extract note from selection", mode = "v" },
+    { "<leader>nc", "<cmd>ObsidianRename<cr>",      desc = "Rename note" },
+    { "<leader>nn", "<cmd>ObsidianNew<cr>",         desc = "New note" },
+    { "<leader>nd", "<cmd>ObsidianDailies<cr>",     desc = "Open picker of this weeks daily notes" },
+    { "<leader>nt", "<cmd>ObsidianToday<cr>",       desc = "Open today's daily note" },
+    { "<leader>ny", "<cmd>ObsidianToday -1<cr>",    desc = "Open yesterday's note" },
+    { "<leader>nu", "<cmd>ObsidianToday 1<cr>",     desc = "Open tomorrow's note" },
+    { "<leader>nw", "<cmd>ObsidianWeeklyPrev<cr>",  desc = "Open weekly note" },
+    { "<leader>ns", "<cmd>ObsidianSearch<cr>",      desc = "Search notes" },
+    { "<leader>nb", "<cmd>ObsidianBacklinks<cr>",   desc = "Show backlinks" },
+    { "<leader>no", "<cmd>ObsidianLinks<cr>",       desc = "Show outgoing links" },
+    { "<leader>nl", "<cmd>ObsidianLink<cr>",        desc = "link text to existing note",           mode = "v" },
+    { "<leader>ni", "<cmd>ObsidianPasteImg<cr>",    desc = "Paste image" },
+    { "<leader>ne", "<cmd>ObsidianExtractNote<cr>", desc = "Extract note from selection",          mode = "v" },
+    {
+      "<leader>ne",
+      function()
+        -- Normal-mode fallback: extract the current line into a new note.
+        vim.cmd("normal! V")
+        vim.cmd("ObsidianExtractNote")
+      end,
+      desc = "Extract note from current line",
+      mode = "n"
+    },
   },
   config = function(_, opts)
     require("obsidian").setup(opts)

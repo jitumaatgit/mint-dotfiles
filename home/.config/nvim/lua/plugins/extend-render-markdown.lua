@@ -106,10 +106,7 @@ return {
     checkbox = {
       -- Turn on / off checkbox state rendering
       enabled = false,
-      -- Determines how icons fill the available space:
-      --  inline:  underlying text is concealed resulting in a left aligned icon
-      --  overlay: result is left padded with spaces to hide any additional text
-      position = "inline",
+      -- (position option removed: render-markdown now expects nil)
       unchecked = {
         -- Replaces '[ ]' of 'task_list_marker_unchecked'
         icon = "   󰄱 ",

@@ -14,7 +14,6 @@ return {
     --   ["Find Under"] = "<C-d>",
     --   ["Find Subword Under"] = "<C-d>",
     -- }
-    vim.g.VM_maps = vim.empty_dict()
 
     -- Show VM status in statusline? (optional)
     -- vim.g.VM_show_warnings = 1

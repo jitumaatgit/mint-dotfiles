@@ -19,9 +19,6 @@ vim.keymap.set(
   { noremap = true, expr = true, silent = true }
 )
 
-vim.keymap.set("i", "jj", "<Esc>")
-vim.keymap.set("i", "kk", "<Esc>")
-vim.keymap.set("i", "jk", "<Esc>")
 vim.keymap.set("i", "kj", "<Esc>")
 vim.keymap.set("t", "<C-n>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
 vim.keymap.set("t", "<Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode" })
