@@ -18,3 +18,10 @@ providers:
           output: 0
           cacheRead: 0
           cacheWrite: 0
+  opencode-zen:
+    baseUrl: https://opencode.ai/zen
+    apiKey: OPENCODE_ZEN_API_KEY
+    models:
+      - id: jev-1.13-free
+        api: typesafe
+        kind: judge

@@ -110,6 +110,7 @@ advisor:
   immuneTurns: 0
   maxNotesPerUpdate: 4
   reviewMode: agent-end
+  continueSeverity: blocker
 prewalk:
   enabled: false
 steeringMode: all
