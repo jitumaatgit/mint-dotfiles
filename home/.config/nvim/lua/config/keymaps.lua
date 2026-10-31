@@ -62,3 +62,13 @@ vim.keymap.set("n", "zm", require("ufo").closeFoldsWith, { desc = "Close folds w
 vim.keymap.set("n", "K", function()
   require("config.smart-peek").smart_peek()
 end, { desc = "Smart peek (fold or LSP hover)" })
+
+-- Noice search all messages
+vim.keymap.set("n", "<leader>sna", function()
+  local ok, noice = pcall(require, "noice")
+  if ok and noice and noice.cmd then
+    noice.cmd("all")
+  else
+    vim.cmd("Noice")
+  end
+end, { desc = "Noice: Search/Show All" })
