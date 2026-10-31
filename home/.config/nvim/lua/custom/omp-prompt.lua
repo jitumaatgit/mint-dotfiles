@@ -36,8 +36,9 @@ local function spawn_omp_terminal(prompt)
   local snacks = require("snacks")
 
   -- Open horizontal terminal split using snacks.terminal (same as C-/)
-  -- Pass prompt as argv to omp (not stdin)
-  local term = snacks.terminal.open({ "omp", prompt }, {
+  -- --allow-home: omp relocates a launch started in exactly $HOME to /tmp
+  -- unless the flag says otherwise, and this spawn never sees the .zshrc guard.
+  local term = snacks.terminal.open({ "omp", "--allow-home", prompt }, {
     win = { position = "bottom", height = 15 },
     auto_close = true,
   })

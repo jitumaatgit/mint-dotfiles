@@ -143,6 +143,8 @@ alias lg='lazygit'
 alias hlg='lazygit -w "$HOME" -g "$HOME/.home-git"'
 alias hlgf='lazygit -w "$HOME" -g "$HOME/.home-git" -f'
 alias homp='GIT_DIR="$HOME/.home-git" GIT_WORK_TREE="$HOME" omp'
+# The omp() guard that keeps a $HOME launch from being relocated to /tmp lives in
+# ~/.zshenv, so non-interactive zsh gets it too; see the comment there.
 alias i='z -i'
 alias vim='nvim'
 alias oc='opencode'
